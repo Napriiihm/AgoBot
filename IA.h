@@ -10,15 +10,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <libwebsockets.h>
-
 #include "Utils.h"
+#include "WS.h"
 
-void IAInit();
-char* IAStep(unsigned char* payload);
+void IARecv(unsigned char* payload);
+unsigned char* IAUpdate();
 
 NodeStack* nodes;
-Player* player;
-Map* map;
+Node* player;
 
 #endif

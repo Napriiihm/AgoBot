@@ -6,6 +6,19 @@
 #include <math.h>
 #include <string.h>
 
+typedef struct Vec2
+{
+	int x;
+	int y;
+} Vec2;
+
+typedef enum NODE_TYPE
+{
+	FOOD,
+	VIRUS,
+	PLAYER
+} NODE_TYPE;
+
 typedef struct Map
 {
 	double left;
@@ -13,13 +26,6 @@ typedef struct Map
 	double right;
 	double bottom;
 } Map;
-
-typedef struct Player
-{
-	double x;
-	double y;
-	unsigned short size;
-} Player;
 
 typedef struct Node
 {
@@ -29,6 +35,7 @@ typedef struct Node
 	unsigned short size;
 	unsigned char flags;
 	unsigned char R,G,B;
+	NODE_TYPE type;
 	unsigned char* name;
 } Node;
 
@@ -41,10 +48,14 @@ typedef struct NodeStack
 void NodeStack_push(NodeStack** list, Node* elem);
 void NodeStack_clear(NodeStack** list);
 Node* NodeStack_get(NodeStack* list, unsigned int id);
-void NodeStack_remove(NodeStack** list, unsigned int id);
+NodeStack* NodeStack_remove(NodeStack* list, unsigned int id);
 char NodeStack_find(NodeStack* list, unsigned int id);
+size_t NodeStack_length(NodeStack* list);
 
-Node* GetNearestFood(NodeStack* list, Player* p);
+double getDistance(Node* n1, Node* n2);
+double getDist(Vec2 a, Vec2 b);
+
+Vec2 normalize(Vec2 vec);
 
 void printHex(char* data, size_t size);
 

@@ -1,84 +1,77 @@
-#include "WS.h"
 #include "IA.h"
 
-// compile with gcc -Wall -g -o sock ./test-client.c -lwebsockets
+t_packet* packetList = NULL; 
 
+struct lws_protocols protocols[] = { { "ogar_protocol", callbackOgar, 0,	20 }, { NULL, NULL, 0, 0 } }; 
 
-// =====================================================================================================================================
-//	Start of function definition
-// =====================================================================================================================================
-
-// Caught on CTRL C
 void sighandler(int sig)
 {
 	forceExit = 1;
 }
 
-/**
-\brief Allocate a packet structure and initialise it.
-\param none
-\return pointer to new allocated packet
-****************************************************************************************************************************/
 t_packet *allocatePacket()
 {
 	t_packet *tmp;
 
-	if ((tmp=malloc(sizeof(t_packet))) == NULL ) return NULL;
-	memset(tmp,0,sizeof(t_packet));
+	if ((tmp = malloc(sizeof(t_packet))) == NULL ) 
+		return NULL;
+
+	memset(tmp, 0, sizeof(t_packet));
+
 	return tmp;
 }
 
-/**
-\brief Add a packet to the list of packet to be sent
-\param wsi websocket descriptor
-\param buf buffer to be sent
-\param len length of packet
-\return pointer to new allocated packet
-****************************************************************************************************************************/
-int sendCommand(struct lws *wsi,unsigned char *buf,unsigned int len)
+int sendCommand(struct lws *wsi, unsigned char *buf, unsigned int len)
 {
-	t_packet *tmp,*list=packetList;
+	t_packet *tmp, *list = packetList;
 
-	if (len > MAXLEN ) return -1;
-	if ((tmp=allocatePacket()) == NULL ) return -1;
-	memcpy(&(tmp->buf)[LWS_PRE],buf,len);
-	tmp->len=len;
+	if (len > MAXLEN ) 
+		return -1;
+
+	if ((tmp = allocatePacket()) == NULL ) 
+		return -1;
+
+	memcpy(&(tmp->buf)[LWS_PRE], buf, len);
+	tmp->len = len;
+
 	if (packetList == NULL )
-		packetList=tmp;
-	else {
-		while (list && list->next) {
-			list=list->next;
-		}
-		list->next=tmp;
+		packetList = tmp;
+	else 
+	{
+		while (list && list->next)
+			list = list->next;
+
+		list->next = tmp;
 	}
+
 	lws_callback_on_writable(wsi);
+
 	return 1;
 }
 
-
-/****************************************************************************************************************************/
 int writePacket(struct lws *wsi)
 {
-	t_packet *tmp=packetList;
+	t_packet *tmp = packetList;
 	int ret;
 
-	if (packetList == NULL ) return 0;
+	if (packetList == NULL ) 
+		return 0;
 
-	packetList=tmp->next;
-	ret=lws_write(wsi,&(tmp->buf)[LWS_PRE],tmp->len,LWS_WRITE_BINARY);
+	packetList = tmp->next;
+
+	ret = lws_write(wsi, &(tmp->buf)[LWS_PRE], tmp->len, LWS_WRITE_BINARY);
 	free(tmp);
 	lws_callback_on_writable(wsi);
 	return(ret);
 }
 
-/****************************************************************************************************************************/
-
-static int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
-	static unsigned int offset=0;
+	static unsigned int offset = 0;
 	static unsigned char rbuf[MAXLEN];
 
-	switch (reason) {
+	switch (reason) 
+	{
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		fprintf(stderr, "ogar: LWS_CALLBACK_CLIENT_ESTABLISHED\n");
 
@@ -96,40 +89,41 @@ static int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void 
 		break;
 
  	case LWS_CALLBACK_CLIENT_WRITEABLE:
-		if (writePacket(wsi) < 0 ) forceExit=1;
+		if (writePacket(wsi) < 0 ) 
+			forceExit = 1;
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		// we have receive some data, check if it can be written in static allocated buffer (length)
 
-		if (offset + len < MAXLEN ) {
-			memcpy(rbuf+offset,in,len);
-			offset+=len;
-			// we have receive some data, check with websocket API if this is a final fragment
-			if (lws_is_final_fragment(wsi)) {
-				// call recv function here
+		if (offset + len < MAXLEN ) 
+		{
+			memcpy(rbuf+offset, in, len);
+			offset += len;
 
-				//printHex(rbuf, offset);
+			if (lws_is_final_fragment(wsi)) 
+			{
+				IARecv(rbuf);
 
-				char* send = IAStep(rbuf);
-
-				sendCommand(wsi, send, 13);
+				unsigned char* send = IAUpdate();
 				//printHex(send, 13);
+				sendCommand(wsi, send, 13);
 
-				offset=0;
+				offset = 0;
 			}
-		} else {	// length is too long... get others but ignore them...
-			offset=MAXLEN;
-		 	if ( lws_is_final_fragment(wsi) ) {
-				offset=0;
-			}
+		} 
+		else 
+		{
+			offset = MAXLEN;
+		 	if (lws_is_final_fragment(wsi))
+				offset = 0;
 		}
-
 		break;
+
 	case LWS_CALLBACK_CLOSED:
 		lwsl_notice("ogar: LWS_CALLBACK_CLOSED\n");
 		forceExit = 1;
 		break;
+
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		lwsl_err("ogar: LWS_CALLBACK_CLIENT_CONNECTION_ERROR\n");
 		forceExit = 1;
@@ -147,14 +141,13 @@ static int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void 
 	return 0;
 }
 
-/****************************************************************************************************************************/
 int main(int argc, char **argv)
 {
 	struct lws_context_creation_info info;
 	struct lws_client_connect_info i;
 
 	struct lws_context *context;
-	const char *protocol,*temp;
+	const char *protocol, *temp;
 
 	memset(&info, 0, sizeof info);
 	memset(&i, 0, sizeof(i));
@@ -166,13 +159,14 @@ int main(int argc, char **argv)
 	i.port = 1443;
 	i.origin = "agar.io";
 
-	lws_parse_uri("127.0.0.1", &protocol, &i.address, &i.port, &temp);
+	if(lws_parse_uri("127.0.0.1", &protocol, &i.address, &i.port, &temp))
+		;
 
 	i.ssl_connection = 0;
 	i.host = i.address;
 	i.ietf_version_or_minus_one = -1;
 	i.client_exts = NULL;
-	i.path="/";
+	i.path = "/";
 
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.protocols = protocols;
@@ -180,23 +174,21 @@ int main(int argc, char **argv)
 	info.uid = -1;
 
 	context = lws_create_context(&info);
-	if (context == NULL) {
+	if (context == NULL) 
+	{
 		fprintf(stderr, "Creating libwebsocket context failed\n");
 		return 1;
 	}
 
 	i.context = context;
 
-	if (lws_client_connect_via_info(&i)); // just to prevent warning !!
+	if (lws_client_connect_via_info(&i))
+		;
 
-	IAInit();
-
-	forceExit=0;
-	// the main magic here !!
-	while (!forceExit) {
+	forceExit = 0;
+	while (!forceExit)
 		lws_service(context, 1000);
-	}
-	// if there is some errors, we just quit
+
 	lwsl_err("Exiting\n");
 	lws_context_destroy(context);
 
