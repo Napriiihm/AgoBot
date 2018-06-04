@@ -22,44 +22,46 @@ void UpdateNodes(unsigned char* data)
 	while(end != 0) //tant qu'il reste des cellules
 	{
 		unsigned char* pos = data + startNodePos + i*NodeSize + totalNameLength; //position de la cellule courrante
-		Node* node = malloc(sizeof(Node));
+		Node* node = malloc(sizeof(Node)); //on alloue la memoire pour la cellule qu'on crée
 
-		memcpy(node, pos, NodeSize);
-		if(node->flags&0x8)
+		memcpy(node, pos, NodeSize); //on copie toute les donnée recu dans notre cellule
+		if(node->flags&0x8) //si la cellule a un nom
 		{
-			size_t nameLength = strlen(pos + NodeSize);
-			node->name = malloc(nameLength+1);
-			strcpy(node->name, data + startNodePos + (i+1)*NodeSize + totalNameLength);
-			totalNameLength += nameLength+1;
-			if(strcmp(node->name, "AgoBot") == 0)
+			size_t nameLength = strlen(pos + NodeSize); //taille du nom
+			node->name = malloc(nameLength+1); //on aloue la memoire pour le nom
+			strcpy(node->name, data + startNodePos + (i+1)*NodeSize + totalNameLength); //on copie le nom
+			totalNameLength += nameLength+1;//on augment la taille total des noms
+			if(strcmp(node->name, "AgoBot") == 0) //si la cellule est noter bot
 			{
-				player->x = (float)node->x;
+				player->x = (float)node->x; //la position de noter player est la position de cette cellule
 				player->y = (float)node->y;
-				player->size = node->size;
+				player->size = node->size; //la taille de notre joueur est la taille de la cellule courrante
 			}
 		}
+		/*
 		char* temp = "0";
-		//printf("    Node : [id:%u x:%d y:%d size:%d F:0x%x R:0x%x G:0x%x B:0x%x N:%s]\n", node->nodeID, node->x, node->y, node->size & 0xFFFF, node->flags, node->R & 0xff, node->G & 0xff, node->B & 0xff, node->flags&8 ? node->name : temp);
+		printf("    Node : [id:%u x:%d y:%d size:%d F:0x%x R:0x%x G:0x%x B:0x%x N:%s]\n", node->nodeID, node->x, node->y, node->size & 0xFFFF, node->flags, node->R & 0xff, node->G & 0xff, node->B & 0xff, node->flags&8 ? node->name : temp);
+		*/
 
-		if(NodeStack_find(nodes, node->nodeID) == 0)
-			NodeStack_push(&nodes, node);
+		if(NodeStack_find(nodes, node->nodeID) == 0) //si on a pas deja cette cellule dans notre liste
+			NodeStack_push(&nodes, node); //on ajoute cette cellule a notre list
 		else
-			free(node);
+			free(node); //sinon on la suprime
 
-		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int));
+		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int)); //la nouvelle fin (check si c'est 0)
 		i++;
 	}
 
-	unsigned int new_pos = startNodePos + i*(NodeSize) + totalNameLength + sizeof(unsigned int);
-	unsigned short nbDead;
+	unsigned int new_pos = startNodePos + i*(NodeSize) + totalNameLength + sizeof(unsigned int); //nouvelle pos aprés avoir lu les cellules
 
-	memcpy(&nbDead, data + new_pos, sizeof(unsigned short));
-	for(int j = 0; j < nbDead; j++)
+	unsigned short nbDead; //nombre de cellule morte depuis la derniére fois
+	memcpy(&nbDead, data + new_pos, sizeof(unsigned short)); //copie
+
+	for(int j = 0; j < nbDead; j++) //pour chaque cellule morte
 	{
 		unsigned int nodeID;
-		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int));
-		NodeStack_remove(&nodes, nodeID);
-
+		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int)); //on prend l'id
+		NodeStack_remove(&nodes, nodeID); //on suprime de notre liste
 	}
 }
 
