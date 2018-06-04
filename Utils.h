@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 typedef struct Map
 {
@@ -17,7 +18,7 @@ typedef struct Player
 {
 	double x;
 	double y;
-	float size;
+	unsigned short size;
 } Player;
 
 typedef struct Node
@@ -28,7 +29,7 @@ typedef struct Node
 	unsigned short size;
 	unsigned char flags;
 	unsigned char R,G,B;
-	char* name;
+	unsigned char* name;
 } Node;
 
 typedef struct NodeStack

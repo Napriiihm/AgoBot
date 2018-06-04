@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -g 
+CFLAGS = -std=c99 -g
 LDFLAGS = -lpthread -lm -lwebsockets
 EXEC = AgoBot
 

@@ -114,7 +114,7 @@ static int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void 
 				char* send = IAStep(rbuf);
 
 				sendCommand(wsi, send, 13);
-				printHex(send, 13);
+				//printHex(send, 13);
 
 				offset=0;
 			}

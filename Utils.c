@@ -4,21 +4,20 @@ Node* GetNearestFood(NodeStack* list, Player* p)
 {
 	double nearDist = 999999;
 	NodeStack* tmp = list;
-	Node* near;
+	Node* near = NULL;
 	while(tmp != NULL)
 	{
-		//printf("NEAR : [%d, (%d, %d)]\n", tmp->node->nodeID, tmp->node->x, tmp->node->y);
-		if(tmp->node != NULL && tmp->node->size <= 23 && sqrt(pow(tmp->node->x - p->x, 2) + pow(tmp->node->y - p->y, 2)) < nearDist)
+		if(tmp->node != NULL && tmp->node->size <= 23)
 		{
-			nearDist = sqrt(pow(tmp->node->x + p->x, 2) + pow(tmp->node->y + p->y, 2));
-			//printf("Neardist = %f\n", nearDist);
-			near = tmp->node;
+			float dist = sqrt(pow((float)tmp->node->x - p->x, 2) + pow((float)tmp->node->y - p->y, 2));
+			if(dist < nearDist)
+			{
+				nearDist = dist;
+				near = tmp->node;
+			}
 		}
-
 		tmp = tmp->next;
 	}
-
-	puts("end");
 	return near;
 }
 
@@ -37,7 +36,10 @@ void NodeStack_clear(NodeStack** list)
 	{
 		NodeStack* next = tmp->next;
 		if(tmp->node != NULL)
+		{
 			free(tmp->node);
+			tmp->node = NULL;
+		}
 		free(tmp);
 		tmp = next;
 	}
@@ -57,16 +59,20 @@ Node* NodeStack_get(NodeStack* list, unsigned int id)
 
 void NodeStack_remove(NodeStack** list, unsigned int id)
 {
-	NodeStack* prev, *tmp = *list;
+
+	NodeStack* prev;
+	NodeStack* tmp = *list;
+	if(tmp == NULL)
+		return;
+
 	while(tmp != NULL)
 	{
 		if(tmp->node != NULL && tmp->node->nodeID == id)
 		{
 			NodeStack* next = tmp->next;
-			if(tmp->node != NULL)
-				free(tmp->node);
-			free(tmp);
-			prev->next = next;
+			free(tmp->node);
+			tmp->node = NULL;
+			prev = next;
 			return;
 		}
 		prev = tmp;
