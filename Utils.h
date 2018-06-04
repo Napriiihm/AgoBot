@@ -41,6 +41,7 @@ void NodeStack_push(NodeStack** list, Node* elem);
 void NodeStack_clear(NodeStack** list);
 Node* NodeStack_get(NodeStack* list, unsigned int id);
 void NodeStack_remove(NodeStack** list, unsigned int id);
+char NodeStack_find(NodeStack* list, unsigned int id);
 
 Node* GetNearestFood(NodeStack* list, Player* p);
 

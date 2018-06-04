@@ -18,6 +18,7 @@ Node* GetNearestFood(NodeStack* list, Player* p)
 		tmp = tmp->next;
 	}
 
+	puts("end");
 	return near;
 }
 
@@ -35,6 +36,8 @@ void NodeStack_clear(NodeStack** list)
 	while(tmp != NULL)
 	{
 		NodeStack* next = tmp->next;
+		if(tmp->node != NULL)
+			free(tmp->node);
 		free(tmp);
 		tmp = next;
 	}
@@ -60,6 +63,8 @@ void NodeStack_remove(NodeStack** list, unsigned int id)
 		if(tmp->node != NULL && tmp->node->nodeID == id)
 		{
 			NodeStack* next = tmp->next;
+			if(tmp->node != NULL)
+				free(tmp->node);
 			free(tmp);
 			prev->next = next;
 			return;
@@ -67,6 +72,18 @@ void NodeStack_remove(NodeStack** list, unsigned int id)
 		prev = tmp;
 		tmp = tmp->next;
 	}
+}
+
+char NodeStack_find(NodeStack* list, unsigned int id)
+{
+	NodeStack* tmp = list;
+	while(tmp != NULL)
+	{
+		if(tmp->node != NULL && tmp->node->nodeID == id)
+			return 1;
+			tmp = tmp->next;
+	}
+	return 0;
 }
 
 void printHex(char* data, size_t size)

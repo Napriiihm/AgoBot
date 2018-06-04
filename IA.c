@@ -8,6 +8,7 @@ void IAInit()
 
 void UpdateNodes(unsigned char* data)
 {
+	//NodeStack_clear(&nodes);
 	//printHex(data, 50);
 	size_t NodeSize = 18;
 	size_t totalNameLength = 0;
@@ -15,46 +16,49 @@ void UpdateNodes(unsigned char* data)
 	//unsigned short deadLen = buffer[1] << 8 + buffer[2];
 	unsigned short deadLen;
 	memcpy(&deadLen, data, 2);
-	
+
 	unsigned int startNodePos = 2 + deadLen*2*sizeof(int);
-	unsigned char end = data[startNodePos];
+	unsigned int end;
+	memcpy(&end, data + startNodePos, sizeof(unsigned int));
 
 	int i = 0;
 	while(end != 0)
 	{
 		char* pos = data + startNodePos + i*NodeSize + totalNameLength;
-		Node* node = malloc(sizeof(Node));
+		Node* node = malloc(NodeSize);
 
 		memcpy(node, pos, NodeSize);
 		if(node->flags&0x8)
 		{
-			size_t nameLength = strlen(data + startNodePos + (i+1)*NodeSize + totalNameLength);
+			size_t nameLength = strlen(pos + NodeSize);
 			node->name = malloc(nameLength);
 			strcpy(node->name, data + startNodePos + (i+1)*NodeSize + totalNameLength);
 			totalNameLength = nameLength+1;
-			
 			//printf("F : 0x%x, name = %s\n", node->flags, node->name);
-			//printHex(pos, 0x30);
 		}
 		char* temp = "0";
-		//printf("    Node : [id:%u x:%d y:%d size:%d F:0x%x R:0x%x G:0x%x B:0x%x N:%s]\n", node->nodeID, node->x, node->y, node->size & 0xFFFF, node->flags, node->R & 0xff, node->G & 0xff, node->B & 0xff, node->flags&8 ? node->name : temp);
+		printf("    Node : [id:%u x:%d y:%d size:%d F:0x%x R:0x%x G:0x%x B:0x%x N:%s]\n", node->nodeID, node->x, node->y, node->size & 0xFFFF, node->flags, node->R & 0xff, node->G & 0xff, node->B & 0xff, node->flags&8 ? node->name : temp);
 
-		NodeStack_push(&nodes, node);
+		if(NodeStack_find(nodes, node->nodeID) == 0)
+			NodeStack_push(&nodes, node);
 
-		end = data[startNodePos + (i+1)*(NodeSize) + totalNameLength];
+		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int));
 		i++;
 	}
 
-	unsigned int new_pos = startNodePos + (i+1)*(NodeSize) + totalNameLength + 1;
+	unsigned int new_pos = startNodePos + (i+1)*(NodeSize) + totalNameLength + sizeof(unsigned int);
 	unsigned short nbDead;
 	memcpy(&nbDead, data + new_pos, sizeof(unsigned short));
 	for(int j = 0; j < nbDead; j++)
 	{
+		printHex(data + new_pos + sizeof(unsigned short), (nbDead-j)*sizeof(unsigned short));
 		unsigned int nodeID;
-		memcpy(&nodeID, data + new_pos + 4 + j * sizeof(unsigned int), sizeof(unsigned int));
+		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int));
+		printf("    Remove Node : [id:%u]\n", nodeID);
 		NodeStack_remove(&nodes, nodeID);
+		exit(1);
 	}
-	//puts("------------------------");
+	puts("------------------------");
 }
 
 void Move(char** ret)
@@ -82,7 +86,7 @@ char* IAStep(unsigned char* payload)
 		//printf("World Update Packet\n");
 		UpdateNodes(payload+1);
 		break;
-	
+
 	case 17:
 		//printf("View Update\n");
 		break;
