@@ -8,8 +8,8 @@
 
 typedef struct Vec2
 {
-	int x;
-	int y;
+	unsigned int x;
+	unsigned int y;
 } Vec2;
 
 typedef enum NODE_TYPE
@@ -30,8 +30,8 @@ typedef struct Map
 typedef struct Node
 {
 	unsigned int nodeID;
-	int x;
-	int y;
+	unsigned int x;
+	unsigned int y;
 	unsigned short size;
 	unsigned char flags;
 	unsigned char R,G,B;
@@ -45,12 +45,19 @@ typedef struct NodeStack
 	struct NodeStack* next;
 } NodeStack;
 
+typedef struct Packet
+{
+	unsigned char* data;
+	size_t len;
+} Packet;
+
 void NodeStack_push(NodeStack** list, Node* elem);
 void NodeStack_clear(NodeStack** list);
 Node* NodeStack_get(NodeStack* list, unsigned int id);
 NodeStack* NodeStack_remove(NodeStack* list, unsigned int id);
 char NodeStack_find(NodeStack* list, unsigned int id);
 size_t NodeStack_length(NodeStack* list);
+void NodeStack_update(NodeStack** list, Node* elem);
 
 double getDistance(Node* n1, Node* n2);
 double getDist(Vec2 a, Vec2 b);
@@ -58,5 +65,7 @@ double getDist(Vec2 a, Vec2 b);
 Vec2 normalize(Vec2 vec);
 
 void printHex(char* data, size_t size);
+
+int max(int a, int b);
 
 #endif

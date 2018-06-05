@@ -1,5 +1,7 @@
 #include "Utils.h"
 
+int max(int a, int b) { return (a > b) ? a : b; }
+
 void NodeStack_push(NodeStack** list, Node* elem)
 {
 	NodeStack* new = malloc(sizeof(NodeStack));
@@ -20,6 +22,7 @@ void NodeStack_clear(NodeStack** list)
 			tmp->node = NULL;
 		}
 		free(tmp);
+		tmp = NULL;
 		tmp = next;
 	}
 }
@@ -95,6 +98,20 @@ size_t NodeStack_length(NodeStack* list)
 	}
 
 	return ret;
+}
+
+void NodeStack_update(NodeStack** list, Node* elem)
+{
+	NodeStack* tmp = *list;
+	while(tmp != NULL)
+	{
+		if(tmp->node != NULL && elem != NULL && tmp->node->nodeID == elem->nodeID)
+		{
+			tmp->node = elem;
+			break;
+		}
+		tmp = tmp->next;
+	}
 }
 
 double getDistance(Node* n1, Node* n2)

@@ -102,11 +102,9 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
 			if (lws_is_final_fragment(wsi)) 
 			{
-				IARecv(rbuf);
+				IARecv(rbuf, &forceExit);
 
-				unsigned char* send = IAUpdate();
-				//printHex(send, 13);
-				sendCommand(wsi, send, 13);
+				IAUpdate(wsi);
 
 				offset = 0;
 			}
@@ -181,6 +179,8 @@ int main(int argc, char **argv)
 	}
 
 	i.context = context;
+
+	//InitUI();
 
 	if (lws_client_connect_via_info(&i))
 		;
