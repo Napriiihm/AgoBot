@@ -6,6 +6,10 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef M_PI
+#define M_PI       3.14159265358979323846
+#endif
+
 typedef struct Vec2
 {
 	unsigned int x;
@@ -18,6 +22,14 @@ typedef enum NODE_TYPE
 	VIRUS,
 	PLAYER
 } NODE_TYPE;
+
+typedef enum ZONE
+{
+	LEFT_UP,
+	LEFT_DOWN,
+	RIGHT_UP,
+	RIGHT_DOWN
+} ZONE;
 
 typedef struct Map
 {
@@ -58,14 +70,23 @@ NodeStack* NodeStack_remove(NodeStack* list, unsigned int id);
 char NodeStack_find(NodeStack* list, unsigned int id);
 size_t NodeStack_length(NodeStack* list);
 void NodeStack_update(NodeStack** list, Node* elem);
+Node* NodeStack_getLowest(NodeStack* list);
+Node* NodeStack_getLargest(NodeStack* list);
 
 double getDistance(Node* n1, Node* n2);
 double getDist(Vec2 a, Vec2 b);
+unsigned int getFoodNum(NodeStack* list);
+
+ZONE getZone(Node* p);
+Vec2 gotoZone(ZONE zone);
 
 Vec2 normalize(Vec2 vec);
 
+double splitDistance(Node* node);
+
 void printHex(char* data, size_t size);
 
-int max(int a, int b);
+double max(double a, double b);
+double min(double a, double b);
 
 #endif

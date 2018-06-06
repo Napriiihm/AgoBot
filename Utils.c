@@ -1,6 +1,127 @@
 #include "Utils.h"
 
-int max(int a, int b) { return (a > b) ? a : b; }
+double max(double a, double b) { return (a > b) ? a : b; }
+double min(double a, double b) { return (a > b) ? b : a; }
+
+double splitDistance(Node* node)
+{
+	if(node == NULL)
+		return 0;
+
+	unsigned short size = node->size;
+	double pipi = M_PI * M_PI;
+	double modif = 3 + log(1 + size) / 10;
+	double splitSpeed = 35 * min(pow(size, -M_PI / pipi / 10) * modif, 150);
+	double ret = max(splitSpeed * 12.8, size * 2);
+
+	return ret;
+}
+
+Node* NodeStack_getLargest(NodeStack* list)
+{
+	unsigned int max = 0;
+	Node* ret;
+	NodeStack* tmp = list;
+	while(tmp != NULL)
+	{
+		if(tmp->node != NULL && tmp->node->size > max)
+		{
+			ret = tmp->node;
+			max = tmp->node->size;
+		}
+		tmp = tmp->next;
+	}
+
+	return ret;
+}
+
+Node* NodeStack_getLowest(NodeStack* list)
+{
+	unsigned int min = 999999;
+	Node* ret;
+	NodeStack* tmp = list;
+	while(tmp != NULL)
+	{
+		if(tmp->node != NULL && tmp->node->size < min)
+		{
+			ret = tmp->node;
+			min = tmp->node->size;
+		}
+		tmp = tmp->next;
+	}
+
+	return ret;
+}
+
+Vec2 gotoZone(ZONE zone)
+{
+	Vec2 ret;
+	switch(zone)
+	{
+	case LEFT_UP:
+		ret.x = 7200/4;
+		ret.y = 3200/4;
+		break;
+	case LEFT_DOWN:
+		ret.x = 7200/4;
+		ret.y = 3200 * (3/4);
+		break;
+	case RIGHT_UP:
+		ret.x = 7200 * (3/4);
+		ret.y = 3200/4;
+		break;
+	case RIGHT_DOWN:
+		ret.x = 7200 * (3/4);
+		ret.y = 3200 * (3/4);
+		break;
+	default:
+		memset(&ret, 0, sizeof(Vec2));
+		break;
+	}
+	return ret;
+}
+
+ZONE getZone(Node* p)
+{
+	Vec2 playerPos;
+	memset(&playerPos, 0, sizeof(Vec2));
+	
+	if(p == NULL)
+		return LEFT_UP;
+
+	playerPos.x = p->x;
+	playerPos.y = p->y;
+
+	if(playerPos.x < 7200/2)
+	{
+		if(playerPos.y < 3200/2)
+			return LEFT_UP;
+		else
+			return RIGHT_UP;
+	}
+	else
+	{
+		if(playerPos.y < 3200/2)
+			return LEFT_DOWN;
+		else
+			return RIGHT_DOWN;
+	}
+
+	return LEFT_UP;
+}
+
+unsigned int getFoodNum(NodeStack* list)
+{
+	NodeStack* tmp = list;
+	unsigned int ret = 0;
+	while(tmp != NULL)
+	{
+		if(tmp->node != NULL && tmp->node->type == FOOD)
+			ret += (tmp->node->size == 10 ? 1 : 2);
+		tmp = tmp->next;
+	}
+	return ret;
+}
 
 void NodeStack_push(NodeStack** list, Node* elem)
 {

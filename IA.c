@@ -31,9 +31,10 @@ void UpdateNodes(unsigned char* data)
 			totalNameLength += nameLength+1;//on augment la taille total des noms
 			if(strcmp(node->name, "AgoBot") == 0) //si la cellule est noter bot
 			{
-				player = node;
-				playerID = node->nodeID;
+				NodeStack_push(&playerNodes, node);
 				player_length++;
+				player = node;
+				playerID = player->nodeID;
 			}
 		}
 		else if(node->flags&0x1)
@@ -55,6 +56,8 @@ void UpdateNodes(unsigned char* data)
 		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int)); //la nouvelle fin (check si c'est 0)
 		i++;
 	}
+
+	//printf("Player : %p[%d]\n", player, playerID);
 
 	unsigned int new_pos = startNodePos + i*(NodeSize) + totalNameLength + sizeof(unsigned int); //nouvelle pos aprés avoir lu les cellules
 
@@ -101,6 +104,148 @@ void Split(struct lws *wsi)
 
 void IAUpdate(struct lws *wsi)
 {
+	/*
+	if(split_timer > 0)
+		split_timer--;
+
+	if(player == NULL)
+	{
+		MoveZero(wsi);
+		return;
+	}
+
+	Vec2 playerPos;
+	playerPos.x = player->x;
+	playerPos.y = player->y;
+
+	Vec2 result; memset(&result, 0, sizeof(Vec2));
+
+	unsigned char split = 0;
+	Node* splitTarget = NULL;
+	NodeStack* threats;
+
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		Node* check = tmp->node;
+		if(check == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		int influence = 0;
+		if(check->type == PLAYER)
+		{
+			if(NodeStack_find(playerNodes, check->nodeID))
+			{
+				tmp = tmp->next;
+				continue;
+			}
+			else if(player->size / 1.3f > check->size)
+				influence = check->size * 2.5f;
+			else if(check->size / 1.3f > player->size)
+				influence = -check->size;
+		}
+		else if(check->type == FOOD)
+			influence = 1;
+		else if(check->type == VIRUS)
+		{
+			if(player->size / 1.3 > check->size)
+			{
+				if(player_length == 16)
+					influence = check->size * 2.5;
+				else
+					influence = -1;
+			}
+		}
+		else
+			influence = check->size;
+
+		if(influence == 0 || NodeStack_find(playerNodes, check->nodeID))
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		Vec2 checkPos;
+		checkPos.x = check->x;
+		checkPos.y = check->y;
+
+		Vec2 displacement;
+		displacement.x = checkPos.x - playerPos.x;
+		displacement.y = checkPos.y - playerPos.y;
+
+		double distance = getDistance(check, player);
+		if(influence < 0)
+		{
+			distance -= player->size + check->size;
+			if(check->type == PLAYER)
+				NodeStack_push(&threats, check);
+		}
+
+		if(distance < 1)
+			distance = 1;
+		influence /= distance;
+
+		Vec2 force = normalize(displacement);
+		force.x *= influence;
+		force.y *= influence;
+
+		if(check->type == PLAYER && player->size / 2.6 > check->size && player->size / 5 < check->size && !split && split_timer == 0 && player_length < 3)
+		{
+			double endDist = max(splitDistance(player), player->size * 4);
+
+			if(distance < endDist - player->size - check->size)
+			{
+				splitTarget = check;
+				split = 1;
+			}
+		}
+		else
+		{
+			result.x += force.x;
+			result.y += force.y;
+		}
+
+		tmp = tmp->next;		
+	}
+
+	result = normalize(result);
+
+	if(split)
+	{
+		if(NodeStack_length(threats) > 0)
+		{
+			if(((Node*)NodeStack_getLargest(threats))->size / 2.6 > player->size)
+			{
+				Vec2 splitPos;
+				splitPos.x = splitTarget->x;
+				splitPos.y = splitTarget->y;
+				Move(wsi, splitPos);
+				split_timer = 16;
+				Split(wsi);
+				return;
+			}
+		}
+		else
+		{
+			Vec2 splitPos;
+			splitPos.x = splitTarget->x;
+			splitPos.y = splitTarget->y;
+			Move(wsi, splitPos);
+			split_timer = 16;
+			Split(wsi);
+			return;
+		}
+	}
+
+	Vec2 mvt;
+	mvt.x = player->x + result.x * 800;
+	mvt.y = player->y + result.y * 800;
+	Move(wsi, mvt);
+	*/
+	
 	if(player == NULL)
 	{
 		MoveZero(wsi);
@@ -115,6 +260,8 @@ void IAUpdate(struct lws *wsi)
 	Node* split_ball = NULL;
 	double small_dist = 0;
 	unsigned int small_value = 0; 
+
+	unsigned int zoneVal = getFoodNum(nodes);
 
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
@@ -151,7 +298,7 @@ void IAUpdate(struct lws *wsi)
 			   dist < 10000 && dist > 5000)
 				split_ball = node;
 
-            if(getDistance(node, player) < 5000)
+            if(getDistance(node, player) < 10000)
             {
             	if(small == NULL || pow(dist, 2) / node->size < small_dist)
             	{
@@ -197,6 +344,22 @@ void IAUpdate(struct lws *wsi)
 
 		printf("Avoiding '%d' balls\n", NodeStack_length(avoids));
 	}
+	else if(zoneVal < 10)
+	{
+		ZONE PlayerZone = getZone(player);
+		ZONE targetZone;
+		if(PlayerZone == LEFT_UP)
+			targetZone = RIGHT_DOWN;
+		else if(PlayerZone == LEFT_DOWN)
+			targetZone = RIGHT_UP;
+		else if(PlayerZone == RIGHT_UP)
+			targetZone = LEFT_DOWN;
+		else
+			targetZone = LEFT_UP;
+
+		Move(wsi, gotoZone(targetZone));
+		printf("Changing zone...\n");
+	}
 	else if(split_ball != NULL)
 	{
 		Vec2 target;
@@ -227,6 +390,7 @@ void IAUpdate(struct lws *wsi)
 
 		printf("Nothings\n");
 	}
+	
 }
 
 void IARecv(unsigned char* payload, int* exit)
@@ -235,7 +399,6 @@ void IARecv(unsigned char* payload, int* exit)
 	switch(opcode)
 	{
 	case 16:
-		
 		UpdateNodes(payload+1);
 		break;
 

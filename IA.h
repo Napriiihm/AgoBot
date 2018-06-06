@@ -18,6 +18,7 @@ void IARecv(unsigned char* payload, int* exit);
 void IAUpdate(struct lws *wsi);
 
 NodeStack* nodes;
+NodeStack* playerNodes;
 Node* player;
 
 unsigned int playerID;
