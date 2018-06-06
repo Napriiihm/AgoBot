@@ -107,6 +107,7 @@ void NodeStack_update(NodeStack** list, Node* elem)
 	{
 		if(tmp->node != NULL && elem != NULL && tmp->node->nodeID == elem->nodeID)
 		{
+			free(tmp->node);
 			tmp->node = elem;
 			break;
 		}
