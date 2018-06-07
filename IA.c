@@ -276,7 +276,7 @@ void IAUpdate(struct lws *wsi)
 		double dist = getDistance(player, node) - node->size;
 		if(node->type == VIRUS)
 		{
-			if(player->size > node->size && dist < player->size + 10 && player_length > 4)
+			if(player->size > node->size && dist < player->size + 10 && player_length > 4 && player_length < 8)
 				NodeStack_push(&avoids, node);
 		}
 		else if(node->size / player->size > 1.1f)
@@ -291,14 +291,15 @@ void IAUpdate(struct lws *wsi)
             if (dist < marge)
                	NodeStack_push(&avoids, node);
 		}
-		else if(node->size / player->size <= 0.8f)
+		else if(node->size / player->size <= 0.7f)
 		{
-			if(player_length < 4 && split_timer == 0 && node->size > 40 &&
-			   node->size / player->size < 0.5 && node->size / player->size > 0.1 && 
-			   dist < 10000 && dist > 5000)
+			if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
+			{
+				printf("Splitting\n");
 				split_ball = node;
+			}
 
-            if(getDistance(node, player) < 10000)
+            if(getDistance(node, player) < 5000)
             {
             	if(small == NULL || pow(dist, 2) / node->size < small_dist)
             	{
@@ -344,7 +345,7 @@ void IAUpdate(struct lws *wsi)
 
 		printf("Avoiding '%d' balls\n", NodeStack_length(avoids));
 	}
-	else if(zoneVal < 10)
+	/*else if(zoneVal < 10)
 	{
 		ZONE PlayerZone = getZone(player);
 		ZONE targetZone;
@@ -359,7 +360,7 @@ void IAUpdate(struct lws *wsi)
 
 		Move(wsi, gotoZone(targetZone));
 		printf("Changing zone...\n");
-	}
+	}*/
 	else if(split_ball != NULL)
 	{
 		Vec2 target;
