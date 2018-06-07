@@ -1,9 +1,13 @@
 #include "IA.h"
 
+void IAInit(const char* name) { BotName = malloc(strlen(name)+1); strcpy(BotName, name); }
+char* getName() { return BotName; }
+
 void UpdateNodes(unsigned char* data)
 {
 	player = NULL;
 	player_length = 0;
+	playerTotalSize = 1;
 	size_t NodeSize = 18; //sizeof(Node) - sizeof(char*)
 	size_t totalNameLength = 0; //taille des noms calculé pour skip vers les prochains nodes
 
@@ -29,12 +33,13 @@ void UpdateNodes(unsigned char* data)
 			node->name = malloc(nameLength+1); //on aloue la memoire pour le nom
 			strcpy(node->name, data + startNodePos + (i+1)*NodeSize + totalNameLength); //on copie le nom
 			totalNameLength += nameLength+1;//on augment la taille total des noms
-			if(strcmp(node->name, "AgoBot") == 0) //si la cellule est noter bot
+			if(strcmp(node->name, BotName) == 0) //si la cellule est noter bot
 			{
 				NodeStack_push(&playerNodes, node);
 				player_length++;
 				player = node;
 				playerID = player->nodeID;
+				playerTotalSize += node->size;
 			}
 		}
 		else if(node->flags&0x1)
@@ -267,7 +272,7 @@ void IAUpdate(struct lws *wsi)
 	while(tmp != NULL)
 	{
 		Node* node = tmp->node;
-		if(node == NULL || player == node || node->size == 0 || player->size == 0 || (node->type == PLAYER && strcmp(node->name, "AgoBot") == 0))
+		if(node == NULL || player == node || node->size == 0 || player->size == 0 || (node->type == PLAYER && strcmp(node->name, BotName) == 0))
 		{
 			tmp = tmp->next;
 			continue;
@@ -322,6 +327,8 @@ void IAUpdate(struct lws *wsi)
 
 	if(NodeStack_length(avoids) > 0)
 	{
+		///TODO fix avoid target
+		
 		Vec2 target;
 		NodeStack* tmp = avoids;
 		while(tmp != NULL)
@@ -343,7 +350,7 @@ void IAUpdate(struct lws *wsi)
 
 		Move(wsi, target);
 
-		printf("Avoiding '%d' balls\n", NodeStack_length(avoids));
+		printf("Avoiding '%d' balls, goto(%u, %u)\n", NodeStack_length(avoids), target.x, target.y);
 	}
 	/*else if(zoneVal < 10)
 	{

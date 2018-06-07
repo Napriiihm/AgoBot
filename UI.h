@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL2_gfxPrimitives.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "Utils.h"
 
@@ -23,6 +24,8 @@ typedef struct Circle
 
 SDL_Window* pWindow;
 SDL_Renderer* pRenderer;
+
+TTF_Font* pFont;
 
 int InitUI();
 

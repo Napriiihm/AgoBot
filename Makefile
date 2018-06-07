@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -g `sdl2-config --cflags`
-LDFLAGS = -lpthread -lm -lwebsockets `sdl2-config --libs` -lSDL2_gfx
+LDFLAGS = -lpthread -lm -lwebsockets `sdl2-config --libs` -lSDL2_gfx -lSDL2_ttf
 EXEC = AgoBot
 
 all : $(EXEC)

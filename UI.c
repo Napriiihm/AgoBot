@@ -20,13 +20,32 @@ int InitUI()
 	if(pRenderer == NULL)
 		return 0;
 
+	if(TTF_Init() == -1)
+		return 0;
+
+	pFont = TTF_OpenFont("Roboto-Regular.ttf", 60);
+
 	return 1;
+}
+
+Vec2 getZoom()
+{
+	Vec2 ret; memset(&ret, 0, sizeof(Vec2));
+	if(player == NULL)
+		return ret;
+
+	double factor = pow(min(64.0 / playerTotalSize, 1), 0.4);
+    ret.x = WINDOW_WIDTH / factor;
+    ret.y = WINDOW_HEIGTH / factor;
+
+    return ret;
 }
 
 Circle Node2Circle(Node* node)
 {
+	Vec2 zoom = getZoom();
 	Circle ret;
-	ret.radius = node->size / 4;
+	ret.radius = node->size * WINDOW_WIDTH / zoom.x;
 	ret.x = node->x;
 	ret.y = node->y;
 	ret.color.r = node->R;
@@ -41,26 +60,17 @@ Vec2 World2Screen(Vec2 pos, Vec2 playerPos)
 	Vec2 ret;
 	memset(&ret, 0, sizeof(Vec2));
 
-	Vec2 origin;
+	Vec2 zoom = getZoom();
 
-	origin.x = playerPos.x - (WINDOW_WIDTH);
-	origin.y = playerPos.y - (WINDOW_HEIGTH);
-
-	ret.x = pos.x - origin.x / 2;
-	ret.y = pos.y - origin.y / 2;
-
-	printf("Origin(%d, %d)\n", origin.x, origin.y);
-	printf("PlayerPos(%d, %d)\n", playerPos.x, playerPos.y);
-	printf("NodePos(%d, %d)\n", pos.x, pos.y);
-	printf("Ret(%d, %d)\n\n", ret.x, ret.y);	
+	ret.x = (pos.x - playerPos.x + zoom.x / 2) * WINDOW_WIDTH / zoom.x;
+	ret.y = (pos.y - playerPos.y + zoom.y / 2) * WINDOW_HEIGTH / zoom.y;	
 
 	return ret;
 }
 
 void DrawAllNodes()
 {
-	Node* p = NodeStack_get(nodes, playerID);
-	if(p == NULL)
+	if(player == NULL)
 		return;
 
 	NodeStack* tmp = nodes;
@@ -71,8 +81,8 @@ void DrawAllNodes()
 			Circle nodeCircle = Node2Circle(tmp->node);
 
 			Vec2 playerPos;
-			playerPos.x = p->x;
-			playerPos.y = p->y; 
+			playerPos.x = player->x;
+			playerPos.y = player->y; 
 
 			Vec2 nodePos;
 			nodePos.x = tmp->node->x;
@@ -83,6 +93,32 @@ void DrawAllNodes()
 			nodeCircle.y = nodePos.y;
 
 			DrawCircle(&nodeCircle);
+
+			if(tmp->node->type == PLAYER)
+			{
+				char* toWrite = malloc(strlen(tmp->node->name) + 1 + 6);
+				sprintf(toWrite, "%s [%d]", tmp->node->name, tmp->node->size);
+				SDL_Color color;
+				color.r = 255 - tmp->node->R;
+				color.g = 255 - tmp->node->G;
+				color.b = 255 - tmp->node->B;
+				color.a = 255;
+				SDL_Surface* textSurface = TTF_RenderUTF8_Blended(pFont, toWrite, color);
+				SDL_Texture* texture = SDL_CreateTextureFromSurface(pRenderer, textSurface);
+
+				Vec2 zoom = getZoom();
+				unsigned short nodeSize = tmp->node->size;
+				SDL_Rect rekt;
+				rekt.x = nodePos.x - nodeSize / 2;
+				rekt.y = nodePos.y;
+				rekt.w = nodeSize * WINDOW_WIDTH / zoom.x;
+				rekt.h = nodeSize * WINDOW_HEIGTH / zoom.y;
+
+				SDL_RenderCopy(pRenderer, texture, NULL, &rekt);
+
+				SDL_FreeSurface(textSurface);
+				SDL_DestroyTexture(texture);
+			}
 		}
 		tmp = tmp->next;
 	}

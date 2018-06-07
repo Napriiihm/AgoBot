@@ -81,8 +81,13 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		unsigned char start[5] = {0xfe, 13, 0, 0, 0};
 		sendCommand(wsi, start, 5);
 
-		char* name = "\0AgoBot\0";
-		sendCommand(wsi, name, 8);
+		char* name = getName();
+		printf("Name: %s\n", name);
+		unsigned int nameLength = strlen(name) + 1;
+		char* namePacket = malloc(nameLength + 1);
+		namePacket[0] = 0;
+		memcpy(namePacket + 1, name, nameLength);
+		sendCommand(wsi, namePacket, nameLength + 1);
 
 		printf("Conection etablie !\n");
 
@@ -105,6 +110,8 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 				IARecv(rbuf, &forceExit);
 
 				IAUpdate(wsi);
+
+				Loop(&forceExit);
 
 				offset = 0;
 			}
@@ -157,8 +164,16 @@ int main(int argc, char **argv)
 	i.port = 1443;
 	i.origin = "agar.io";
 
-	if(lws_parse_uri("127.0.0.1", &protocol, &i.address, &i.port, &temp))
-		;
+	if(argc > 2)
+	{
+		if(lws_parse_uri(argv[1], &protocol, &i.address, &i.port, &temp))
+			;
+	}
+	else
+	{
+		if(lws_parse_uri("127.0.0.1", &protocol, &i.address, &i.port, &temp))
+			;
+	}
 
 	i.ssl_connection = 0;
 	i.host = i.address;
@@ -180,7 +195,10 @@ int main(int argc, char **argv)
 
 	i.context = context;
 
-	//InitUI();
+	InitUI();
+
+	const char* name = "AgoBot";
+	IAInit(name);
 
 	if (lws_client_connect_via_info(&i))
 		;
