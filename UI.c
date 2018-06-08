@@ -6,6 +6,16 @@ void DrawCircle(Circle* circle)
 	filledCircleRGBA(pRenderer, circle->x, circle->y, circle->radius, circle->color.r, circle->color.g, circle->color.b, circle->color.a);
 }
 
+void drawDebugLine(Vec2 start, Vec2 end, char r, char g, char b)
+{
+	aalineRGBA(pRenderer, start.x, start.y, end.x, end.y, r, g, b, 255);
+}
+
+void drawDebugCircle(short x, short y, short radius, char r, char g, char b)
+{
+	aacircleRGBA(pRenderer, x, y, radius, r, g, b, 255);
+}
+
 int InitUI()
 {
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -124,10 +134,13 @@ void DrawAllNodes()
 	}
 }
 
-void Render()
+void Clear()
 {
 	SDL_RenderClear(pRenderer);
+}
 
+void Render()
+{
 	DrawAllNodes();
 
 	SDL_SetRenderDrawColor(pRenderer, 255, 255, 255, 255);

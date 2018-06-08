@@ -28,7 +28,12 @@ SDL_Renderer* pRenderer;
 TTF_Font* pFont;
 
 int InitUI();
-
 void Loop(int* exit);
+void Clear();
+
+Vec2 World2Screen(Vec2 pos, Vec2 playerPos);
+
+void drawDebugLine(Vec2 start, Vec2 end, char r, char g, char b);
+void drawDebugCircle(short x, short y, short radius, char r, char g, char b);
 
 #endif

@@ -99,7 +99,6 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-
 		if (offset + len < MAXLEN ) 
 		{
 			memcpy(rbuf+offset, in, len);
@@ -108,6 +107,8 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 			if (lws_is_final_fragment(wsi)) 
 			{
 				IARecv(rbuf, &forceExit);
+
+				Clear();
 
 				IAUpdate(wsi);
 

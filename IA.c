@@ -257,6 +257,9 @@ void IAUpdate(struct lws *wsi)
 		return;
 	}
 
+	Vec2 playerPos; playerPos.x = player->x; playerPos.y = player->y;
+	Vec2 playerPosScreen = World2Screen(playerPos, playerPos);
+
 	if(split_timer > 0)
 		split_timer--;
 
@@ -267,6 +270,9 @@ void IAUpdate(struct lws *wsi)
 	unsigned int small_value = 0; 
 
 	unsigned int zoneVal = getFoodNum(nodes);
+
+	unsigned int marge = player->size * 4;
+	drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
 
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
@@ -281,28 +287,36 @@ void IAUpdate(struct lws *wsi)
 		double dist = getDistance(player, node) - node->size;
 		if(node->type == VIRUS)
 		{
-			if(player->size > node->size && dist < player->size + 10 && player_length > 4 && player_length < 8)
+			if(player->size > node->size && dist < player->size + node->size && player_length < 16)
 				NodeStack_push(&avoids, node);
 		}
-		else if(node->size / player->size > 1.1f)
+		else if(node->size / player->size > 1.3f)
 		{
-			unsigned int marge = 7000;
+			marge = 1000;
 
 			if(player_length > 2)
-				marge = 15000;
+				marge = 1500;
 			else if (node->size / player->size <= 3.5f && node->size / player->size > 1.5f)
-                marge = 10000;
+                marge = 1200;
 
             if (dist < marge)
                	NodeStack_push(&avoids, node);
 		}
-		else if(node->size / player->size <= 0.7f)
+		else if(player->size / node->size > 1.3f)
 		{
+			/* Enemy split */
 			if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
 			{
 				printf("Splitting\n");
 				split_ball = node;
 			}
+
+			/* Always split
+			if(split_timer == 0 && player->size > 70)
+			{
+				printf("Splitting\n");
+				split_ball = node;
+			}*/
 
             if(getDistance(node, player) < 5000)
             {
@@ -329,16 +343,22 @@ void IAUpdate(struct lws *wsi)
 	{
 		///TODO fix avoid target
 		
-		Vec2 target;
+		Vec2 target = playerPos;
 		NodeStack* tmp = avoids;
 		while(tmp != NULL)
 		{
 			Node* node = tmp->node;
+
+			Vec2 Line;
+			Line.x = node->x;
+			Line.y = node->y;
+
+			Line = World2Screen(Line, playerPos);
+			drawDebugLine(playerPosScreen, Line, 255, 0, 0);
 			
 			Vec2 offset;
 			offset.x = player->x - node->x;
 			offset.y = player->y - node->y;
-			offset = normalize(offset);
 			
 			target.x += offset.x;
 			target.y += offset.y;
@@ -346,9 +366,10 @@ void IAUpdate(struct lws *wsi)
 			tmp = tmp->next;
 		}
 
-		target = normalize(target);
-
 		Move(wsi, target);
+
+		target = World2Screen(target, playerPos);
+		drawDebugLine(playerPosScreen, target, 0, 0, 255);
 
 		printf("Avoiding '%d' balls, goto(%u, %u)\n", NodeStack_length(avoids), target.x, target.y);
 	}
@@ -385,6 +406,9 @@ void IAUpdate(struct lws *wsi)
 		target.y = small->y;
 
 		Move(wsi, target);
+
+		target = World2Screen(target, playerPos);
+		drawDebugLine(playerPosScreen, target, 0, 255, 0);
 
 		const char* name = "food";
 		printf("Hunting %s (%d)\n", small->type==PLAYER ? small->name : name, small_value);
