@@ -285,12 +285,12 @@ void IAUpdate(struct lws *wsi)
 		}
 
 		double dist = getDistance(player, node) - node->size;
-		if(node->type == VIRUS)
+		/*if(node->type == VIRUS)
 		{
-			if(player->size > node->size && dist < player->size + node->size && player_length < 16)
-				NodeStack_push(&avoids, node);
-		}
-		else if(node->size / player->size > 1.3f)
+			/*if(player->size > node->size && dist < node->size && player_length < 16)
+				NodeStack_push(&avoids, node);*/
+		//}
+		/*else*/ if(node->size / player->size > 1.3f)
 		{
 			marge = 1000;
 
@@ -305,18 +305,18 @@ void IAUpdate(struct lws *wsi)
 		else if(player->size / node->size > 1.3f)
 		{
 			/* Enemy split */
-			if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
+			/* if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
 			{
 				printf("Splitting\n");
 				split_ball = node;
-			}
+			} */
 
-			/* Always split
+			/* Always split */
 			if(split_timer == 0 && player->size > 70)
 			{
 				printf("Splitting\n");
 				split_ball = node;
-			}*/
+			}
 
             if(getDistance(node, player) < 5000)
             {
