@@ -50,13 +50,10 @@ void UpdateNodes(unsigned char* data)
 		//char* temp = "0";
 		//printf("    Node : [id:%u x:%d y:%d size:%d F:0x%x R:0x%x G:0x%x B:0x%x T:0x%x, N:%s]\n", node->nodeID, node->x, node->y, node->size & 0xFFFF, node->flags, node->R & 0xff, node->G & 0xff, node->B & 0xff, node->type, node->flags&8 ? node->name : temp);
 
-		if(NodeStack_find(nodes, node->nodeID) == 0) //si on pas a deja cette cellule dans notre liste on arrete
+		if(NodeStack_find(nodes, node->nodeID) == 0) //si on pas a deja cette cellule dans notre liste on l'update
 			NodeStack_push(&nodes, node); //on ajoute cette cellule a notre list
 		else
-		{
-			nodes = NodeStack_remove(nodes, node->nodeID);
-			NodeStack_push(&nodes, node);
-		}
+			NodeStack_update(&nodes, node);
 
 		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int)); //la nouvelle fin (check si c'est 0)
 		i++;
@@ -74,21 +71,7 @@ void UpdateNodes(unsigned char* data)
 		unsigned int nodeID;
 		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int)); //on prend l'id
 		nodes = NodeStack_remove(nodes, nodeID); //on suprime de notre liste
-		//if(NodeStack_find(playerNodes, nodeID))
-		//	NodeStack_remove(playerNodes, nodeID);
 	}
-}
-
-void MoveZero(struct lws* wsi)
-{
-	unsigned char* packet = malloc(13);
-	memset(packet, 0, 13);
-	*packet = 16;
-	Vec2 pos;
-	memset(&pos, 0, sizeof(Vec2));
-	memcpy(packet+1, &pos, sizeof(pos));
-
-	sendCommand(wsi, packet, 13);
 }
 
 void Move(struct lws *wsi, Vec2 pos)
@@ -99,6 +82,13 @@ void Move(struct lws *wsi, Vec2 pos)
 	memcpy(packet+1, &pos, sizeof(pos));
 
 	sendCommand(wsi, packet, 13);
+}
+
+void MoveZero(struct lws* wsi)
+{
+	Vec2 pos; memset(&pos, 0, sizeof(Vec2));
+
+	Move(wsi, pos);
 }
 
 void Split(struct lws *wsi)
@@ -228,148 +218,6 @@ void IAV2(struct lws* wsi)
 
 void IAUpdate(struct lws *wsi)
 {
-	/*
-	if(split_timer > 0)
-		split_timer--;
-
-	if(player == NULL)
-	{
-		MoveZero(wsi);
-		return;
-	}
-
-	Vec2 playerPos;
-	playerPos.x = player->x;
-	playerPos.y = player->y;
-
-	Vec2 result; memset(&result, 0, sizeof(Vec2));
-
-	unsigned char split = 0;
-	Node* splitTarget = NULL;
-	NodeStack* threats;
-
-	NodeStack* tmp = nodes;
-	while(tmp != NULL)
-	{
-		Node* check = tmp->node;
-		if(check == NULL)
-		{
-			tmp = tmp->next;
-			continue;
-		}
-
-		int influence = 0;
-		if(check->type == PLAYER)
-		{
-			if(NodeStack_find(playerNodes, check->nodeID))
-			{
-				tmp = tmp->next;
-				continue;
-			}
-			else if(player->size / 1.3f > check->size)
-				influence = check->size * 2.5f;
-			else if(check->size / 1.3f > player->size)
-				influence = -check->size;
-		}
-		else if(check->type == FOOD)
-			influence = 1;
-		else if(check->type == VIRUS)
-		{
-			if(player->size / 1.3 > check->size)
-			{
-				if(player_length == 16)
-					influence = check->size * 2.5;
-				else
-					influence = -1;
-			}
-		}
-		else
-			influence = check->size;
-
-		if(influence == 0 || NodeStack_find(playerNodes, check->nodeID))
-		{
-			tmp = tmp->next;
-			continue;
-		}
-
-		Vec2 checkPos;
-		checkPos.x = check->x;
-		checkPos.y = check->y;
-
-		Vec2 displacement;
-		displacement.x = checkPos.x - playerPos.x;
-		displacement.y = checkPos.y - playerPos.y;
-
-		double distance = getDistance(check, player);
-		if(influence < 0)
-		{
-			distance -= player->size + check->size;
-			if(check->type == PLAYER)
-				NodeStack_push(&threats, check);
-		}
-
-		if(distance < 1)
-			distance = 1;
-		influence /= distance;
-
-		Vec2 force = normalize(displacement);
-		force.x *= influence;
-		force.y *= influence;
-
-		if(check->type == PLAYER && player->size / 2.6 > check->size && player->size / 5 < check->size && !split && split_timer == 0 && player_length < 3)
-		{
-			double endDist = max(splitDistance(player), player->size * 4);
-
-			if(distance < endDist - player->size - check->size)
-			{
-				splitTarget = check;
-				split = 1;
-			}
-		}
-		else
-		{
-			result.x += force.x;
-			result.y += force.y;
-		}
-
-		tmp = tmp->next;		
-	}
-
-	result = normalize(result);
-
-	if(split)
-	{
-		if(NodeStack_length(threats) > 0)
-		{
-			if(((Node*)NodeStack_getLargest(threats))->size / 2.6 > player->size)
-			{
-				Vec2 splitPos;
-				splitPos.x = splitTarget->x;
-				splitPos.y = splitTarget->y;
-				Move(wsi, splitPos);
-				split_timer = 16;
-				Split(wsi);
-				return;
-			}
-		}
-		else
-		{
-			Vec2 splitPos;
-			splitPos.x = splitTarget->x;
-			splitPos.y = splitTarget->y;
-			Move(wsi, splitPos);
-			split_timer = 16;
-			Split(wsi);
-			return;
-		}
-	}
-
-	Vec2 mvt;
-	mvt.x = player->x + result.x * 800;
-	mvt.y = player->y + result.y * 800;
-	Move(wsi, mvt);
-	*/
-	
 	if(player == NULL)
 	{
 		MoveZero(wsi);
@@ -546,6 +394,7 @@ void AddNode(unsigned char* data)
 	unsigned int id;
 	memcpy(&id, data, sizeof(unsigned int));
 
+	NodeStack_update();
 	/*if(!NodeStack_find(playerNodes, id))
 	{
 		Node* node = NodeStack_get(nodes, id);

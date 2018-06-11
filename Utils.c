@@ -257,10 +257,12 @@ void NodeStack_update(NodeStack** list, Node* elem)
 		{
 			free(tmp->node);
 			tmp->node = elem;
-			break;
+			return;
 		}
 		tmp = tmp->next;
 	}
+
+	NodeStack_push(list, elem);
 }
 
 double getDistance(Node* n1, Node* n2)
