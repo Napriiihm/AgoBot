@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	i.port = 1443;
 	i.origin = "agar.io";
 
-	if(argc > 2)
+	if(argc >= 2)
 	{
 		if(lws_parse_uri(argv[1], &protocol, &i.address, &i.port, &temp))
 			;

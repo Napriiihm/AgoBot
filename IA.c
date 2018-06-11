@@ -74,6 +74,8 @@ void UpdateNodes(unsigned char* data)
 		unsigned int nodeID;
 		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int)); //on prend l'id
 		nodes = NodeStack_remove(nodes, nodeID); //on suprime de notre liste
+		//if(NodeStack_find(playerNodes, nodeID))
+		//	NodeStack_remove(playerNodes, nodeID);
 	}
 }
 
@@ -285,12 +287,12 @@ void IAUpdate(struct lws *wsi)
 		}
 
 		double dist = getDistance(player, node) - node->size;
-		/*if(node->type == VIRUS)
+		if(node->type == VIRUS)
 		{
-			/*if(player->size > node->size && dist < node->size && player_length < 16)
-				NodeStack_push(&avoids, node);*/
-		//}
-		/*else*/ if(node->size / player->size > 1.3f)
+			if(player->size > node->size && dist < node->size && player_length < 16)
+				NodeStack_push(&avoids, node);
+		}
+		else if(node->size / player->size > 1.3f)
 		{
 			marge = 1000;
 
@@ -422,7 +424,18 @@ void IAUpdate(struct lws *wsi)
 
 		printf("Nothings\n");
 	}
-	
+}
+
+void AddNode(unsigned char* data)
+{
+	unsigned int id;
+	memcpy(&id, data, sizeof(unsigned int));
+
+	/*if(!NodeStack_find(playerNodes, id))
+	{
+		Node* node = NodeStack_get(nodes, id);
+		NodeStack_push(&playerNodes, node);
+	}*/
 }
 
 void IARecv(unsigned char* payload, int* exit)
@@ -453,6 +466,7 @@ void IARecv(unsigned char* payload, int* exit)
 
 	case 32:
 		//printf("Owns blob\n");
+		AddNode(payload+1);
 		break;
 
 	case 49:
