@@ -109,6 +109,123 @@ void Split(struct lws *wsi)
 	sendCommand(wsi, packet, 1);
 }
 
+void IAV2(struct lws* wsi)
+{
+	Node* cell = player; // future lowest cell
+
+	if(cell == NULL)
+		return;
+
+	Vec2 cellPos; cellPos.x = cell->x; cellPos.y = cell->y;
+	Vec2 result; memset(&result, 0, sizeof(Vec2));
+
+	unsigned char split = 0;
+	Node* splitTarget = NULL;
+	NodeStack* threats;
+
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		Node* check = tmp->node;
+
+		double influence = 0;
+		if(check->type == PLAYER)
+		{
+			if(strcmp(check->name, BotName) == 0)
+				influence = 0;
+			else if(cell->size / 1.3f > check->size)
+				influence = check->size * 2.5f;
+			else if(check->size / 1.3f > cell->size)
+				influence = -check->size;
+		}
+		else if(check->type == FOOD)
+			influence = 1;
+		else if(check->type == VIRUS)
+		{
+			if(cell->size / 1.3f > check->size)
+			{
+				if(player_length == 16)
+					influence = check->size * 2.5f;
+				else
+					influence = -1;
+			}
+		}
+		else
+			influence = check->size;
+
+		if(influence == 0)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		Vec2 checkPos; checkPos.x = check->x; checkPos.y = check->y;
+		Vec2 displacement; displacement.x = checkPos.x - cellPos.x; displacement.y = checkPos.y - cellPos.y;
+
+		double distance = Vec2_length(displacement);
+		if(influence < 0)
+		{
+			distance -= cell->size + check->size;
+			if(check->type == PLAYER)
+				NodeStack_push(&threats, check);
+		}
+
+		if(distance < 1)
+			distance = 1;
+
+		Vec2f force = Vec2f_normalize(displacement);
+		force.x *= influence;
+		force.y *= influence;
+
+		if(check->type == PLAYER && cell->size / 2.6f > check->size && cell->size / 5.f < check->size &&
+			!split && split_timer == 0 && player_length < 3)
+		{
+			double endDist = max(splitDistance(cell), cell->size * 4);
+
+			if(distance < endDist - cell->size - check->size)
+			{
+				splitTarget = check;
+				split = 1;
+			}
+		}
+		else
+		{
+			result.x += force.x;
+			result.y += force.y;
+		}
+
+		tmp = tmp->next;
+	}
+
+	Vec2f ret = Vec2f_normalize(result);
+
+	if(split)
+	{
+		if(NodeStack_length(threats) > 0)
+		{
+			if(NodeStack_getLargest(threats)->size / 2.6f > cell->size)
+			{
+				Vec2 pos; pos.x = splitTarget->x; pos.y = splitTarget->y;
+				Move(wsi, pos);
+				split_timer = 16;
+				Split(wsi);
+				return;
+			}	
+		}
+		else
+		{
+			Vec2 pos; pos.x = splitTarget->x; pos.y = splitTarget->y;
+			Move(wsi, pos);
+			split_timer = 16;
+			Split(wsi);
+			return;
+		}
+	}
+
+	Vec2 mov; mov.x = cellPos.x + ret.x * 800; mov.y = cellPos.y + ret.y * 800;
+	Move(wsi, mov);	
+}
+
 void IAUpdate(struct lws *wsi)
 {
 	/*
@@ -314,7 +431,7 @@ void IAUpdate(struct lws *wsi)
 			} */
 
 			/* Always split */
-			if(split_timer == 0 && player->size > 70)
+			if(split_timer == 0 && player->size > 100 && player_length < 4)
 			{
 				printf("Splitting\n");
 				split_ball = node;
@@ -417,12 +534,10 @@ void IAUpdate(struct lws *wsi)
 	}
 	else
 	{
-		Vec2 zero;
-		memset(&zero, 0, sizeof(Vec2));
-
-		Move(wsi, zero);
-
-		printf("Nothings\n");
+		ZONE zone = getOppositeZone();
+		Vec2 pos = gotoZone(zone);
+		Move(wsi, pos);
+		printf("Nothings, goto(%d, %d)\n", pos.x, pos.y);
 	}
 }
 
@@ -458,6 +573,7 @@ void IARecv(unsigned char* payload, int* exit)
 
 	case 20:
 		//printf("Reset owned cells\n");
+		NodeStack_clear(&playerNodes);
 		break;
 
 	case 21:

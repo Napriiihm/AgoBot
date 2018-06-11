@@ -18,6 +18,7 @@ const char* BotName;
 
 void IARecv(unsigned char* payload, int* exit);
 void IAUpdate(struct lws *wsi);
+void IAV2(struct lws* wsi);
 void IAInit(const char* name);
 char* getName();
 

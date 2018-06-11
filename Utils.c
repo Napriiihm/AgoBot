@@ -1,7 +1,14 @@
 #include "Utils.h"
 
+#include "IA.h"
+
 double max(double a, double b) { return (a > b) ? a : b; }
 double min(double a, double b) { return (a > b) ? b : a; }
+
+double Vec2_length(Vec2 vec)
+{
+	return sqrt(pow(vec.x, 2) + pow(vec.y, 2));
+}
 
 double splitDistance(Node* node)
 {
@@ -51,6 +58,26 @@ Node* NodeStack_getLowest(NodeStack* list)
 	}
 
 	return ret;
+}
+
+ZONE getOppositeZone()
+{
+	ZONE curr = getZone(player);
+	switch(curr)
+	{
+	case LEFT_UP:
+		return RIGHT_DOWN;
+		break;
+	case LEFT_DOWN:
+		return RIGHT_UP;
+		break;
+	case RIGHT_UP:
+		return LEFT_DOWN;
+		break;
+	case RIGHT_DOWN:
+		return LEFT_UP;
+		break;
+	}
 }
 
 Vec2 gotoZone(ZONE zone)
@@ -246,14 +273,14 @@ double getDist(Vec2 a, Vec2 b)
 	return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
-Vec2 normalize(Vec2 vec)
+Vec2f Vec2f_normalize(Vec2 vec)
 {
 	Vec2 zero;
-	memset(&zero, 0, sizeof(Vec2));
+	memset(&zero, 0, sizeof(Vec2f));
 
 	double dist = getDist(zero, vec);
 
-	Vec2 ret;
+	Vec2f ret;
 	ret.x = vec.x / dist;
 	ret.y = vec.y / dist;
 

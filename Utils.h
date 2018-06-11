@@ -16,6 +16,12 @@ typedef struct Vec2
 	unsigned int y;
 } Vec2;
 
+typedef struct Vec2f
+{
+	double x;
+	double y;
+} Vec2f;
+
 typedef enum NODE_TYPE
 {
 	FOOD,
@@ -79,13 +85,15 @@ unsigned int getFoodNum(NodeStack* list);
 
 ZONE getZone(Node* p);
 Vec2 gotoZone(ZONE zone);
+ZONE getOppositeZone();
 
-Vec2 normalize(Vec2 vec);
+Vec2f Vec2f_normalize(Vec2 vec);
+double Vec2_length(Vec2 vec);
 
 double splitDistance(Node* node);
 
 void printHex(char* data, size_t size);
-
+             
 double max(double a, double b);
 double min(double a, double b);
 
