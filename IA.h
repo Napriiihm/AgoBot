@@ -26,6 +26,8 @@ NodeStack* nodes;
 NodeStack* playerNodes;
 Node* player;
 
+unsigned int newPlayerNodeId;
+
 unsigned int playerID;
 unsigned int player_length;
 unsigned int playerTotalSize;

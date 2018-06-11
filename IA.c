@@ -26,6 +26,12 @@ void UpdateNodes(unsigned char* data)
 
 		memcpy(node, pos, NodeSize); //on copie toute les donnée recu dans notre cellule
 
+		if(newPlayerNodeId == node->nodeID)
+		{
+			NodeStack_update(&playerNodes, node);
+			newPlayerNodeId = 0;
+		}
+
 		if(node->flags&0x8) //si la cellule a un nom
 		{
 			node->type = PLAYER;
@@ -394,12 +400,7 @@ void AddNode(unsigned char* data)
 	unsigned int id;
 	memcpy(&id, data, sizeof(unsigned int));
 
-	NodeStack_update();
-	/*if(!NodeStack_find(playerNodes, id))
-	{
-		Node* node = NodeStack_get(nodes, id);
-		NodeStack_push(&playerNodes, node);
-	}*/
+	newPlayerNodeId = id;
 }
 
 void IARecv(unsigned char* payload, int* exit)
