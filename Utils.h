@@ -89,6 +89,8 @@ ZONE getOppositeZone();
 
 Vec2f Vec2f_normalize(Vec2 vec);
 double Vec2_length(Vec2 vec);
+Vec2f Vec2toVec2f(Vec2 vec);
+Vec2 Vec2ftoVec2(Vec2f vec);
 
 double splitDistance(Node* node);
 

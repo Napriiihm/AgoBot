@@ -5,7 +5,7 @@ EXEC = AgoBot
 
 all : $(EXEC)
 
-$(EXEC) : main.o IA.o Utils.o UI.o
+$(EXEC) : main.o IA.o Utils.o UI.o Angle.o
 	$(CC) -o $(EXEC) *.o $(LDFLAGS)
 
 main.o : main.c
@@ -18,4 +18,7 @@ Utils.o : Utils.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 UI.o : UI.c
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+Angle.o : Angle.c
 	$(CC) -o $@ -c $< $(CFLAGS)

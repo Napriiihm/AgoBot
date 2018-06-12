@@ -1,20 +1,3 @@
-Skip to content
-Features
-Business
-Explore
-Marketplace
-Pricing
-This repository
-Search
-Sign in or Sign up
- Watch 246  Star 1,112  Fork 2,045 Apostolique/Agar.io-bot
- Code  Issues 31  Pull requests 5  Projects 0  Wiki  Insights
-Branch: master Find file Copy path Agar.io-bot/bot.user.js
-6790dfc  on Apr 20, 2016
-@ErmiyaEskandary ErmiyaEskandary Virus detection code modified and fixed
-13 contributors @Apostolique @ErmiyaEskandary @FliiFe @henopied @SJMakin @stefnotch @NPWR @muratlahur @tempAsHell @lilezek @caiosm1005 @jLynx @Icelys
-RawBlameHistory    
-1289 lines (1031 sloc)  53 KB
 /*The MIT License (MIT)
 Copyright (c) 2015 Apostolique
 Permission is hereby granted, free of charge, to any person obtaining a copy

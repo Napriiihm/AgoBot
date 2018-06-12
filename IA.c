@@ -151,7 +151,7 @@ void IAV3(struct lws* wsi)
 		puts("Found distance.");
 
 		char enemyCanSplit = canSplit(player, tmp->node);
-		double secureDistance(enemyCanSplit ? splitDangerDistance : normalDangerDistance);
+		double secureDistance = enemyCanSplit ? splitDangerDistance : normalDangerDistance;
 
 		NodeStack* tmp2 = foods;
 		while(tmp2 != NULL)
