@@ -464,7 +464,7 @@ void IARecv(unsigned char* payload, int* exit)
 		break;
 
 	default:
-		//printf("Unknown opcode : %x\n", opcode);
+		printf("Unknown opcode : %x\n", opcode);
 		break;
 	}
 
