@@ -105,6 +105,90 @@ void Split(struct lws *wsi)
 	sendCommand(wsi, packet, 1);
 }
 
+char canSplit(Node* node1, Node* node2)
+{
+	return (node1->size / (float)node2->size > 2.8f && node1->size / (float)node2->size < 20.f);
+}
+
+void IAV3(struct lws* wsi)
+{
+	NodeStack *foods, *threats, *viruses;
+
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		if(tmp->node == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		Node* node = tmp->node;
+		if(node->type == VIRUS)
+			NodeStack_push(&viruses, node);
+		else if(node->type == FOOD)
+			NodeStack_push(&foods, node);
+		else if(node->type == PLAYER && strcmp(node->name, BotName) != 0)
+		{
+			if(node->size / (float)player->size > 1.3f)
+				NodeStack_push(&threats, node);
+			else if(player->size / (float)node->size > 1.33f)
+				NodeStack_push(&foods, node);
+		}
+
+		tmp = tmp->next;
+	}
+
+	tmp = threats;
+	while(tmp != NULL)
+	{
+		double enemyDistance = getDistance(tmp->node, player);
+
+		double splitDangerDistance = tmp->node->size + SPLIT_DISTANCE + DANGER_DISTANCE;
+		double normalDangerDistance = tmp->node->size + DANGER_DISTANCE;
+		double shiftDistance = player->size;
+
+		puts("Found distance.");
+
+		char enemyCanSplit = canSplit(player, tmp->node);
+		double secureDistance(enemyCanSplit ? splitDangerDistance : normalDangerDistance);
+
+		NodeStack* tmp2 = foods;
+		while(tmp2 != NULL)
+		{
+			if(getDistance(tmp2->node, player) < secureDistance + shiftDistance)
+				foods = NodeStack_remove(foods, tmp2->node->nodeID);	
+			tmp2 = tmp2->next;
+		}
+
+		puts("Remove unsecure food.");
+
+		if(enemyCanSplit)
+		{
+			//drawCircle(pos, splitDangerDistance)
+			//drawCircle(pos, splitDangerDistance + shiftDistance)
+		}
+		else
+		{
+			//drawCircle(pos, normalDangerDistance)
+			//drawCircle(pos, normalDangerDistance + shiftDistance)
+		}
+
+		/*
+		if (allPossibleThreats[i].danger && getLastUpdate() - allPossibleThreats[i].dangerTimeOut > 1000) {
+
+            allPossibleThreats[i].danger = false;
+        }
+		*/
+
+		puts("Figured out who was important.");
+
+		//if ((enemyCanSplit && enemyDistance < splitDangerDistance) || enemyCanSplit && )
+
+		tmp = tmp->next;
+	}	
+}
+
 void IAV2(struct lws* wsi)
 {
 	Node* cell = player; // future lowest cell
@@ -240,7 +324,7 @@ void IAUpdate(struct lws *wsi)
 	Node* small = NULL;
 	Node* split_ball = NULL;
 	double small_dist = 0;
-	unsigned int small_value = 0; 
+	unsigned int small_value = 0;
 
 	unsigned int zoneVal = getFoodNum(nodes);
 
@@ -258,12 +342,12 @@ void IAUpdate(struct lws *wsi)
 		}
 
 		double dist = getDistance(player, node) - node->size;
-		if(node->type == VIRUS)
-		{
-			if(player->size > node->size && dist < node->size && player_length < 16)
-				NodeStack_push(&avoids, node);
-		}
-		else if(node->size / player->size > 1.3f)
+		//if(node->type == VIRUS)
+		//{
+			//if(player->size > node->size && dist < node->size && player_length < 16)
+			//	NodeStack_push(&avoids, node);
+		//}
+		/*else*/ if(node->size / player->size > 1.3f && node->type != VIRUS)
 		{
 			marge = 1000;
 
@@ -278,11 +362,13 @@ void IAUpdate(struct lws *wsi)
 		else if(player->size / node->size > 1.3f)
 		{
 			/* Enemy split */
-			/* if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
+			/*
+			if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
 			{
 				printf("Splitting\n");
 				split_ball = node;
-			} */
+			}
+			*/
 
 			/* Always split */
 			if(split_timer == 0 && player->size > 100 && player_length < 4)

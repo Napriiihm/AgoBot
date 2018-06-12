@@ -14,11 +14,15 @@
 #include "WS.h"
 #include "UI.h"
 
+#define SPLIT_DISTANCE 710
+#define DANGER_DISTANCE 150
+
 const char* BotName;
 
 void IARecv(unsigned char* payload, int* exit);
 void IAUpdate(struct lws *wsi);
 void IAV2(struct lws* wsi);
+void IAV3(struct lws* wsi);
 void IAInit(const char* name);
 char* getName();
 
