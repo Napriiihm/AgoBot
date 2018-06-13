@@ -63,11 +63,19 @@ typedef struct NodeStack
 	struct NodeStack* next;
 } NodeStack;
 
+typedef struct Stack
+{
+	void* elem;
+	struct Stack* next;
+} Stack;
+
 typedef struct Packet
 {
 	unsigned char* data;
 	size_t len;
 } Packet;
+
+void Stack_push(Stack** stack, void* elem);
 
 void NodeStack_push(NodeStack** list, Node* elem);
 void NodeStack_clear(NodeStack** list);
@@ -91,6 +99,7 @@ Vec2f Vec2f_normalize(Vec2 vec);
 double Vec2_length(Vec2 vec);
 Vec2f Vec2toVec2f(Vec2 vec);
 Vec2 Vec2ftoVec2(Vec2f vec);
+Vec2 NodetoVec2(Node* node);
 
 double splitDistance(Node* node);
 

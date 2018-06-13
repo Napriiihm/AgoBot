@@ -150,6 +150,14 @@ unsigned int getFoodNum(NodeStack* list)
 	return ret;
 }
 
+void Stack_push(Stack** stack, void* elem)
+{
+	Stack* new = malloc(sizeof(Stack));
+	new->elem = elem;
+	new->next = *stack;
+	*stack = new;
+}
+
 void NodeStack_push(NodeStack** list, Node* elem)
 {
 	NodeStack* new = malloc(sizeof(NodeStack));
@@ -160,18 +168,14 @@ void NodeStack_push(NodeStack** list, Node* elem)
 
 void NodeStack_clear(NodeStack** list)
 {
-	NodeStack* tmp = *list;
-	while(tmp != NULL)
+	while(*list != NULL)
 	{
-		NodeStack* next = tmp->next;
-		if(tmp->node != NULL)
+		if((*list)->node == NULL)
 		{
-			free(tmp->node);
-			tmp->node = NULL;
+			*list = (*list)->next;
+			continue;
 		}
-		free(tmp);
-		tmp = NULL;
-		tmp = next;
+		*list = NodeStack_remove(*list, (*list)->node->nodeID);
 	}
 }
 
@@ -303,6 +307,15 @@ Vec2 Vec2ftoVec2(Vec2f vec)
 	Vec2 ret;
 	ret.x = (int)vec.x;
 	ret.y = (int)vec.y;
+
+	return ret;
+}
+
+Vec2 NodetoVec2(Node* node)
+{
+	Vec2 ret;
+	ret.x = node->x;
+	ret.y = node->y;
 
 	return ret;
 }

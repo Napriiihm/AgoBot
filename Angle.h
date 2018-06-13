@@ -20,8 +20,12 @@ char isSideLine(Vec2f a, Vec2f b, Vec2f c);
 
 char angleIsWithin(double angle, Vec2f range);
 
-double rangeToAngle(Vec2f range);
+int rangeToAngle(Vec2f range);
 
 void computeAngleRanges(Node* cell1, Node* cell2);
+
+double* getEdgeLinesFromPoint(Node* cell1, Node* cell2, double radius);
+
+double* getAngleRange(Node* cell1, Node* cell2, double index, double radius);
 
 #endif

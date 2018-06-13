@@ -1278,16 +1278,3 @@ if ( typeof window.updateBotList == 'function' ) {
 } else {
     window.log("The launcher is not yet started.");
 }
-© 2018 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-API
-Training
-Shop
-Blog
-About
-Press h to open a hovercard with more details.

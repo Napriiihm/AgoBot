@@ -71,7 +71,7 @@ char angleIsWithin(double angle, Vec2f range)
 	return (diff >= 0 && diff <= range.y);
 }
 
-double rangeToAngle(Vec2f range)
+int rangeToAngle(Vec2f range)
 {
 	return (int)(range.x + range.y) % 360;
 }
@@ -109,4 +109,87 @@ void computeAngleRanges(Node* cell1, Node* cell2)
         drawPoint(blob1.x, blob1.y, 3, "" + cell1range + ", " + cell2range + " R: " + (Math.round((cell1range / cell2range) * 1000) / 1000));
     }
 	*/
+}
+
+double* getEdgeLinesFromPoint(Node* cell1, Node* cell2, double radius)
+{
+	double* ret = malloc(6 * sizeof(double));
+
+	Vec2 cell1Pos = NodetoVec2(cell1);
+	Vec2 cell2Pos = NodetoVec2(cell2);
+
+	char invert = 0;
+
+	double tmpRadius = getDist(cell1Pos, cell2Pos);
+	if(tmpRadius <= radius)
+	{
+		radius = tmpRadius - 5;
+		invert = 1;
+	}
+
+	Vec2 d; d.x = cell2Pos.x - cell1Pos.x; d.y = cell2Pos.y - cell1Pos.y;
+	double dd = sqrt(d.x * d.x + d.y * d.y);
+	double a = asin(radius / dd);
+	double b = atan2(d.y, d.x);
+
+	double t = b - a;
+	Vec2f ta; ta.x = radius * -sin(t); ta.y = radius * cos(t);
+
+	t = b + a;
+	Vec2f tb; tb.x = radius * -sin(t); tb.y = radius * cos(t);
+
+	Vec2f arg1; arg1.x = cell2Pos.x + ta.x; arg1.y = cell2Pos.y + ta.y;
+	double angleLeft = getAngle(arg1, Vec2toVec2f(cell1Pos));
+
+	Vec2f arg2; arg2.x = cell2Pos.x + tb.x; arg2.y = cell2Pos.y + tb.y;
+	double angleRight = getAngle(arg2, Vec2toVec2f(cell1Pos));
+
+	double angleDistace = (int)(angleRight - angleLeft) % 360;
+
+	memcpy(ret, &angleLeft, sizeof(double));
+	memcpy(ret + sizeof(double), &angleDistace, sizeof(double));
+	memcpy(ret + sizeof(double) * 2, &(arg2.x), sizeof(double));
+	memcpy(ret + sizeof(double) * 3, &(arg2.y), sizeof(double));
+	memcpy(ret + sizeof(double) * 4, &(arg1.x), sizeof(double));
+	memcpy(ret + sizeof(double) * 5, &(arg1.y), sizeof(double));
+
+	return ret;
+}
+
+double* getAngleRange(Node* cell1, Node* cell2, double index, double radius)
+{
+	double* angleStuff = getEdgeLinesFromPoint(cell1, cell2, radius);
+
+	Vec2f arg; memcpy(&arg, angleStuff, 2 * sizeof(double));
+	double leftAngle; memcpy(&leftAngle, angleStuff, sizeof(double));
+	double rightAngle = (double)rangeToAngle(arg);
+	double difference; memcpy(&difference, angleStuff + sizeof(double), sizeof(double));
+
+	//drawPoint(angleStuff[2][0], angleStuff[2][1], 3, "");
+    //drawPoint(angleStuff[3][0], angleStuff[3][1], 3, "");
+
+    Vec2f lineLeft = followAngle(leftAngle, Vec2toVec2f(NodetoVec2(cell1)), 150 + cell1->size - index * 10);
+    Vec2f lineRight = followAngle(rightAngle, Vec2toVec2f(NodetoVec2(cell1)), 150 + cell1->size - index * 10);
+
+	/*
+	if (blob2.isVirus()) {
+	    drawLine(blob1.x, blob1.y, lineLeft[0], lineLeft[1], 6);
+	    drawLine(blob1.x, blob1.y, lineRight[0], lineRight[1], 6);
+	    drawArc(lineLeft[0], lineLeft[1], lineRight[0], lineRight[1], blob1.x, blob1.y, 6);
+	} else if(getCells().hasOwnProperty(blob2.id)) {
+	    drawLine(blob1.x, blob1.y, lineLeft[0], lineLeft[1], 0);
+	    drawLine(blob1.x, blob1.y, lineRight[0], lineRight[1], 0);
+	    drawArc(lineLeft[0], lineLeft[1], lineRight[0], lineRight[1], blob1.x, blob1.y, 0);
+	} else {
+	    drawLine(blob1.x, blob1.y, lineLeft[0], lineLeft[1], 3);
+	    drawLine(blob1.x, blob1.y, lineRight[0], lineRight[1], 3);
+	    drawArc(lineLeft[0], lineLeft[1], lineRight[0], lineRight[1], blob1.x, blob1.y, 3);
+	}
+	*/
+
+	double* ret = malloc(2 * sizeof(double));
+	memcpy(ret, &leftAngle, sizeof(double));
+	memcpy(ret + sizeof(double), &leftAngle, sizeof(double));
+
+	return ret;
 }

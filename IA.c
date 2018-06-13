@@ -112,7 +112,10 @@ char canSplit(Node* node1, Node* node2)
 
 void IAV3(struct lws* wsi)
 {
-	NodeStack *foods, *threats, *viruses;
+	if(player == NULL)
+		return;
+
+	NodeStack *foods, *threats, *viruses, *splitTargets;
 
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
@@ -124,24 +127,29 @@ void IAV3(struct lws* wsi)
 		}
 
 		Node* node = tmp->node;
-		if(node->type == VIRUS)
-			NodeStack_push(&viruses, node);
-		else if(node->type == FOOD)
+		if(node->type != VIRUS && player->size / (float)node->size > 1.33f)
 			NodeStack_push(&foods, node);
-		else if(node->type == PLAYER && strcmp(node->name, BotName) != 0)
-		{
-			if(node->size / (float)player->size > 1.3f)
-				NodeStack_push(&threats, node);
-			else if(player->size / (float)node->size > 1.33f)
-				NodeStack_push(&foods, node);
-		}
+		else if(node->type != VIRUS && node->size / (float)player->size > 1.3f)
+			NodeStack_push(&threats, node);
+		else if(node->type == VIRUS && player->size / (float)node->size > 1.1f)
+			NodeStack_push(&viruses, node);
 
 		tmp = tmp->next;
 	}
 
+	double* badAngles[1024]; int badAnglesIndex = 0; memcpy(badAngles, 0, 1024 * sizeof(double*));
+	double** obstaclesList[1024]; int obstaclesIndex = 0; memcpy(obstaclesList, 0, 1024 * sizeof(double**));
+
+	int i = 0;
 	tmp = threats;
 	while(tmp != NULL)
 	{
+		if(tmp->node == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
 		double enemyDistance = getDistance(tmp->node, player);
 
 		double splitDangerDistance = tmp->node->size + SPLIT_DISTANCE + DANGER_DISTANCE;
@@ -183,127 +191,256 @@ void IAV3(struct lws* wsi)
 
 		puts("Figured out who was important.");
 
-		//if ((enemyCanSplit && enemyDistance < splitDangerDistance) || enemyCanSplit && )
+		if((enemyCanSplit && enemyDistance < splitDangerDistance) )//|| (enemyCanSplit && danger))
+		{
+			double* bad = malloc(3 * sizeof(double));
+			double* angleRange = getAngleRange(player, tmp->node, i, splitDangerDistance);
+			memcpy(bad, angleRange, 2 * sizeof(double));
+			memcpy(bad + 2 * sizeof(double), &enemyDistance, sizeof(double));
+			badAngles[badAnglesIndex++] = bad;
+		}
+		else if((!enemyCanSplit && enemyDistance < normalDangerDistance) ) //|| (!enemyCanSplit && danger))
+		{
+			double* bad = malloc(3 * sizeof(double));
+			double* angleRange = getAngleRange(player, tmp->node, i, splitDangerDistance);
+			memcpy(bad, angleRange, 2 * sizeof(double));
+			memcpy(bad + 2 * sizeof(double), &enemyDistance, sizeof(double));
+			badAngles[badAnglesIndex++] = bad;
+		}
+		else if(enemyCanSplit && enemyDistance < splitDangerDistance + shiftDistance)
+		{
+			double un = 1.f, zero = 0.f;
+			double* angleRange = getAngleRange(player, tmp->node, i, splitDangerDistance);
+			double angle1; memcpy(&angle1, angleRange, sizeof(double));
+			Vec2f arg; memcpy(&arg, angleRange, 2 * sizeof(double));
+			double angle2 = (double)rangeToAngle(arg);
+
+			double** ret = malloc(2 * sizeof(double*));
+			*ret = malloc(2 * sizeof(double));
+			*(ret + sizeof(double)) = malloc(2 * sizeof(double));
+
+			memcpy(*ret, &angle1, sizeof(double));
+			memcpy(*ret + sizeof(double), &un, sizeof(double));
+			memcpy(*(ret + sizeof(double)), &angle2, sizeof(double));
+			memcpy(*(ret + sizeof(double)) + sizeof(double), &zero, sizeof(double));
+			obstaclesList[obstaclesIndex++] = ret;
+		}
+		else if(! enemyCanSplit && enemyDistance < normalDangerDistance + shiftDistance)
+		{
+			double un = 1.f, zero = 0.f;
+			double* angleRange = getAngleRange(player, tmp->node, i, splitDangerDistance);
+			double angle1; memcpy(&angle1, angleRange, sizeof(double));
+			Vec2f arg; memcpy(&arg, angleRange, 2 * sizeof(double));
+			double angle2 = (double)rangeToAngle(arg);
+
+			double** ret = malloc(2 * sizeof(double*));
+			*ret = malloc(2 * sizeof(double));
+			*(ret + sizeof(double)) = malloc(2 * sizeof(double));
+
+			memcpy(*ret, &angle1, sizeof(double));
+			memcpy(*ret + sizeof(double), &un, sizeof(double));
+			memcpy(*(ret + sizeof(double)), &angle2, sizeof(double));
+			memcpy(*(ret + sizeof(double)) + sizeof(double), &zero, sizeof(double));
+			obstaclesList[obstaclesIndex++] = ret;
+		}
+
+		printf("Done with enemy: %d\n", i);
 
 		tmp = tmp->next;
+		i++;
 	}	
-}
 
-void IAV2(struct lws* wsi)
-{
-	Node* cell = player; // future lowest cell
+	puts("done looking for enemies!");
 
-	if(cell == NULL)
-		return;
-
-	Vec2 cellPos; cellPos.x = cell->x; cellPos.y = cell->y;
-	Vec2 result; memset(&result, 0, sizeof(Vec2));
-
-	unsigned char split = 0;
-	Node* splitTarget = NULL;
-	NodeStack* threats;
-
-	NodeStack* tmp = nodes;
+	i = 0;
+	tmp = viruses;
 	while(tmp != NULL)
 	{
-		Node* check = tmp->node;
-
-		double influence = 0;
-		if(check->type == PLAYER)
-		{
-			if(strcmp(check->name, BotName) == 0)
-				influence = 0;
-			else if(cell->size / 1.3f > check->size)
-				influence = check->size * 2.5f;
-			else if(check->size / 1.3f > cell->size)
-				influence = -check->size;
-		}
-		else if(check->type == FOOD)
-			influence = 1;
-		else if(check->type == VIRUS)
-		{
-			if(cell->size / 1.3f > check->size)
-			{
-				if(player_length == 16)
-					influence = check->size * 2.5f;
-				else
-					influence = -1;
-			}
-		}
-		else
-			influence = check->size;
-
-		if(influence == 0)
+		Node* node = tmp->node;
+		if(node == NULL)
 		{
 			tmp = tmp->next;
 			continue;
 		}
 
-		Vec2 checkPos; checkPos.x = check->x; checkPos.y = check->y;
-		Vec2 displacement; displacement.x = checkPos.x - cellPos.x; displacement.y = checkPos.y - cellPos.y;
+		/*
+		if (player[k].size < allPossibleViruses[i].size) {
+            drawCircle(allPossibleViruses[i].x, allPossibleViruses[i].y, allPossibleViruses[i].size + 10, 3);
+            drawCircle(allPossibleViruses[i].x, allPossibleViruses[i].y, allPossibleViruses[i].size * 2, 6);
 
-		double distance = Vec2_length(displacement);
-		if(influence < 0)
+        } else {
+            drawCircle(allPossibleViruses[i].x, allPossibleViruses[i].y, player[k].size + 50, 3);
+            drawCircle(allPossibleViruses[i].x, allPossibleViruses[i].y, player[k].size * 2, 6);
+        }
+		*/
+
+		double virusDistance = getDistance(node, player);
+		if(player->size < node->size)
 		{
-			distance -= cell->size + check->size;
-			if(check->type == PLAYER)
-				NodeStack_push(&threats, check);
-		}
-
-		if(distance < 1)
-			distance = 1;
-
-		Vec2f force = Vec2f_normalize(displacement);
-		force.x *= influence;
-		force.y *= influence;
-
-		if(check->type == PLAYER && cell->size / 2.6f > check->size && cell->size / 5.f < check->size &&
-			!split && split_timer == 0 && player_length < 3)
-		{
-			double endDist = max(splitDistance(cell), cell->size * 4);
-
-			if(distance < endDist - cell->size - check->size)
+			if(virusDistance < node->size * 2)
 			{
-				splitTarget = check;
-				split = 1;
+				double un = 1.f, zero = 0.f;
+				double* angleRange = getAngleRange(player, node, i, node->size + 10);
+				double angle1; memcpy(&angle1, angleRange, sizeof(double));
+				Vec2f arg; memcpy(&arg, angleRange, 2 * sizeof(double));
+				double angle2 = (double)rangeToAngle(arg);
+
+				double** ret = malloc(2 * sizeof(double*));
+				*ret = malloc(2 * sizeof(double));
+				*(ret + sizeof(double)) = malloc(2 * sizeof(double));
+
+				memcpy(*ret, &angle1, sizeof(double));
+				memcpy(*ret + sizeof(double), &un, sizeof(double));
+				memcpy(*(ret + sizeof(double)), &angle2, sizeof(double));
+				memcpy(*(ret + sizeof(double)) + sizeof(double), &zero, sizeof(double));
+				obstaclesList[obstaclesIndex++] = ret;
 			}
 		}
 		else
 		{
-			result.x += force.x;
-			result.y += force.y;
+			if(virusDistance < player->size * 2)
+			{
+				double un = 1.f, zero = 0.f;
+				double* angleRange = getAngleRange(player, node, i, player->size + 50);
+				double angle1; memcpy(&angle1, angleRange, sizeof(double));
+				Vec2f arg; memcpy(&arg, angleRange, 2 * sizeof(double));
+				double angle2 = (double)rangeToAngle(arg);
+
+				double** ret = malloc(2 * sizeof(double*));
+				*ret = malloc(2 * sizeof(double));
+				*(ret + sizeof(double)) = malloc(2 * sizeof(double));
+
+				memcpy(*ret, &angle1, sizeof(double));
+				memcpy(*ret + sizeof(double), &un, sizeof(double));
+				memcpy(*(ret + sizeof(double)), &angle2, sizeof(double));
+				memcpy(*(ret + sizeof(double)) + sizeof(double), &zero, sizeof(double));
+				obstaclesList[obstaclesIndex++] = ret;
+			}
+		}
+
+		tmp = tmp->next;
+		i++;
+	}
+
+
+
+}
+
+void IAV2(struct lws* wsi)
+{
+	if(player == NULL)
+	{
+		MoveZero(wsi);
+		return;
+	}
+
+	Vec2 playerPos = NodetoVec2(player);
+
+	NodeStack *foods = NULL, *threats = NULL, *viruses = NULL, *splitTargets = NULL;
+
+	Vec2 target; memset(&target, 0, sizeof(double));
+
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		if(tmp->node == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		Node* node = tmp->node;
+		if(node->type != VIRUS && player->size / (float)node->size > 1.33f)
+			NodeStack_push(&foods, node);
+		else if(node->type != VIRUS && node->size / (float)player->size > 1.3f)
+			NodeStack_push(&threats, node);
+		else if(node->type == VIRUS && player->size / (float)node->size > 1.1f)
+			NodeStack_push(&viruses, node);
+
+		tmp = tmp->next;
+	}
+
+	if(NodeStack_length(threats) > 0)
+	{
+		tmp = threats;
+		while(tmp != NULL)
+		{
+			Node* node = tmp->node;
+			if(node == NULL)
+			{
+				tmp = tmp->next;
+				continue;
+			}
+
+			double enemyDistance = getDistance(player, node);
+			double splitDangerDistance = tmp->node->size + SPLIT_DISTANCE + DANGER_DISTANCE;
+			double normalDangerDistance = tmp->node->size + DANGER_DISTANCE;
+			double shiftDistance = player->size;
+
+			char enemyCanSplit = canSplit(player, tmp->node);
+			double secureDistance = enemyCanSplit ? splitDangerDistance : normalDangerDistance;
+
+			Vec2 enemiePos = NodetoVec2(node);
+			enemiePos = World2Screen(enemiePos, playerPos);
+
+			drawDebugCircle(enemiePos.x, enemiePos.y, secureDistance, 255, 0, 0);
+
+			tmp = tmp->next;
+		}
+
+		Move(wsi, target);
+		drawDebugLine(World2Screen(playerPos, playerPos), target, 0, 0, 255);
+
+		return;
+	}
+
+	tmp = viruses;
+	while(tmp != NULL)
+	{
+		Node* virus = tmp->node;
+		if(virus == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		double dangerDistance = virus->size + DANGER_DISTANCE;
+
+		Vec2 virusPos = NodetoVec2(virus);
+		virusPos = World2Screen(virusPos, playerPos);
+
+		drawDebugCircle(virusPos.x, virusPos.y, dangerDistance, 255, 0, 0);
+
+		tmp = tmp->next;
+	}
+
+	Node* foodToGo;
+	float foodValue = 0;
+
+	tmp = foods;
+	while(tmp != NULL)
+	{
+		Node* food = tmp->node;
+		if(food == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		double distance = getDistance(food, player);
+		float val = food->size * food->size / distance;
+		if(val > foodValue)
+		{
+			foodValue = val;
+			foodToGo = food;			
 		}
 
 		tmp = tmp->next;
 	}
 
-	Vec2f ret = Vec2f_normalize(result);
-
-	if(split)
-	{
-		if(NodeStack_length(threats) > 0)
-		{
-			if(NodeStack_getLargest(threats)->size / 2.6f > cell->size)
-			{
-				Vec2 pos; pos.x = splitTarget->x; pos.y = splitTarget->y;
-				Move(wsi, pos);
-				split_timer = 16;
-				Split(wsi);
-				return;
-			}	
-		}
-		else
-		{
-			Vec2 pos; pos.x = splitTarget->x; pos.y = splitTarget->y;
-			Move(wsi, pos);
-			split_timer = 16;
-			Split(wsi);
-			return;
-		}
-	}
-
-	Vec2 mov; mov.x = cellPos.x + ret.x * 800; mov.y = cellPos.y + ret.y * 800;
-	Move(wsi, mov);	
+	target = NodetoVec2(foodToGo);
+	Move(wsi, target);
+	drawDebugLine(World2Screen(playerPos, playerPos), World2Screen(target, playerPos), 0, 255, 0);
 }
 
 void IAUpdate(struct lws *wsi)
@@ -329,7 +466,7 @@ void IAUpdate(struct lws *wsi)
 	unsigned int zoneVal = getFoodNum(nodes);
 
 	unsigned int marge = player->size * 4;
-	drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
+	//drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
 
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
@@ -342,12 +479,14 @@ void IAUpdate(struct lws *wsi)
 		}
 
 		double dist = getDistance(player, node) - node->size;
-		//if(node->type == VIRUS)
-		//{
-			//if(player->size > node->size && dist < node->size && player_length < 16)
+		/*if(node->type == VIRUS)
+		{
+			if(player->size > node->size * 1.1f)
+				small = node;
+			//if(player->size > node->size && dist < node->size && player->size < 150)
 			//	NodeStack_push(&avoids, node);
-		//}
-		/*else*/ if(node->size / player->size > 1.3f && node->type != VIRUS)
+		}
+		else*/ if(node->size / player->size > 1.3f && node->type != VIRUS)
 		{
 			marge = 1000;
 
@@ -359,27 +498,32 @@ void IAUpdate(struct lws *wsi)
             if (dist < marge)
                	NodeStack_push(&avoids, node);
 		}
-		else if(player->size / node->size > 1.3f)
+		else if(player->size / node->size > 1.1f)
 		{
 			/* Enemy split */
-			/*
-			if(player_length < 3 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
+			/*if(player_length < 4 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
 			{
 				printf("Splitting\n");
 				split_ball = node;
-			}
-			*/
+			}*/
+			
 
 			/* Always split */
-			if(split_timer == 0 && player->size > 100 && player_length < 4)
+			
+			if(split_timer == 0 && player->size > 150 && player_length < 3)
 			{
 				printf("Splitting\n");
 				split_ball = node;
 			}
+			
 
             if(getDistance(node, player) < 5000)
             {
-            	if(small == NULL || pow(dist, 2) / node->size < small_dist)
+            	if(node->type == VIRUS && player->size > 110)
+            	{
+            		small = node;
+            	}
+            	else if(small == NULL || pow(dist, 2) / node->size < small_dist)
             	{
             		//puts("Food");
             		if(small_value == 0)

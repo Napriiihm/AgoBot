@@ -10,12 +10,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "Utils.h"
+#include "Angle.h"
 #include "WS.h"
 #include "UI.h"
 
 #define SPLIT_DISTANCE 710
-#define DANGER_DISTANCE 150
+#define DANGER_DISTANCE 50
+#define FOOD_VALUE 10
 
 const char* BotName;
 

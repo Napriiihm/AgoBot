@@ -143,7 +143,7 @@ void Render()
 {
 	DrawAllNodes();
 
-	SDL_SetRenderDrawColor(pRenderer, 157, 30, 151, 255);
+	SDL_SetRenderDrawColor(pRenderer, 225, 225, 225, 255);
 
 	SDL_RenderPresent(pRenderer);
 }
