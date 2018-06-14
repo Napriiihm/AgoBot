@@ -3,6 +3,17 @@
 void IAInit(const char* name) { BotName = malloc(strlen(name)+1); strcpy(BotName, name); }
 char* getName() { return BotName; }
 
+char isPlayer(Node* node)
+{
+	if(player == NULL || node == NULL)
+		return 0;
+
+	if(node->type != PLAYER)
+		return 0;
+
+	return strcmp(node->name, BotName) == 0;
+}
+
 void UpdateNodes(unsigned char* data)
 {
 	player = NULL;
@@ -76,6 +87,10 @@ void UpdateNodes(unsigned char* data)
 	{
 		unsigned int nodeID;
 		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int)); //on prend l'id
+		
+		//if(NodeStack_find(playerNodes, nodeID))
+		//	playerNodes = NodeStack_remove(playerNodes, nodeID);
+
 		nodes = NodeStack_remove(nodes, nodeID); //on suprime de notre liste
 	}
 }
@@ -144,7 +159,7 @@ void IAV3(struct lws* wsi)
 	tmp = threats;
 	while(tmp != NULL)
 	{
-		if(tmp->node == NULL)
+		if(tmp->node == NULL || isPlayer(tmp->node))
 		{
 			tmp = tmp->next;
 			continue;
@@ -340,6 +355,8 @@ void IAV2(struct lws* wsi)
 
 	Vec2 target; memset(&target, 0, sizeof(double));
 
+	Node* split_target = NULL;
+
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
 	{
@@ -349,19 +366,34 @@ void IAV2(struct lws* wsi)
 			continue;
 		}
 
+		if(isPlayer(tmp->node))
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
 		Node* node = tmp->node;
-		if(node->type != VIRUS && player->size / (float)node->size > 1.33f)
+		if(node->type == PLAYER && player_length < 6 && player->size > 100 && player->size / (float)node->size > 2.6)
+			NodeStack_push(&splitTargets, node);
+		else if(node->type == PLAYER && getDistance(player, node) < player->size * 3)
+			NodeStack_push(&foods, node);
+		else if(node->type != VIRUS && player->size / (float)node->size > 1.33f)
 			NodeStack_push(&foods, node);
 		else if(node->type != VIRUS && node->size / (float)player->size > 1.3f)
 			NodeStack_push(&threats, node);
-		else if(node->type == VIRUS && player->size / (float)node->size > 1.1f)
+		else if(node->type == VIRUS && player->size / (float)node->size > 1.3f)
 			NodeStack_push(&viruses, node);
+
+
+		Vec2 pos = World2Screen(NodetoVec2(player), NodetoVec2(player));
+		drawDebugCircle(pos.x, pos.y, player->size * 3, 255, 255, 0);
 
 		tmp = tmp->next;
 	}
 
 	if(NodeStack_length(threats) > 0)
 	{
+		Vec2 offset;
 		tmp = threats;
 		while(tmp != NULL)
 		{
@@ -380,7 +412,16 @@ void IAV2(struct lws* wsi)
 			char enemyCanSplit = canSplit(player, tmp->node);
 			double secureDistance = enemyCanSplit ? splitDangerDistance : normalDangerDistance;
 
+			if(enemyDistance > secureDistance)
+			{
+				tmp = tmp->next;
+				continue;
+			}
+
 			Vec2 enemiePos = NodetoVec2(node);
+
+			offset.x += enemiePos.x; offset.y += enemiePos.y;
+
 			enemiePos = World2Screen(enemiePos, playerPos);
 
 			drawDebugCircle(enemiePos.x, enemiePos.y, secureDistance, 255, 0, 0);
@@ -388,8 +429,44 @@ void IAV2(struct lws* wsi)
 			tmp = tmp->next;
 		}
 
+		target.x = offset.x;
+		target.y = offset.y;
+
 		Move(wsi, target);
 		drawDebugLine(World2Screen(playerPos, playerPos), target, 0, 0, 255);
+
+		return;
+	}
+
+	if(NodeStack_length(splitTargets) > 0)
+	{
+		Node* starget = NULL;
+		double value = 0;
+		tmp = splitTargets;
+		while(tmp != NULL)
+		{
+			Node* node = tmp->node;
+			if(node == NULL)
+			{
+				tmp = tmp->next;
+				continue;
+			}
+
+			double dist = getDistance(node, player);
+			double currVal = node->size / dist;
+
+			if(currVal > value)
+			{
+				starget = node;
+				value = currVal;
+			}
+
+			tmp = tmp->next;
+		}
+
+		target = NodetoVec2(starget);
+		Move(wsi, target);
+		Split(wsi);
 
 		return;
 	}
@@ -427,8 +504,15 @@ void IAV2(struct lws* wsi)
 			continue;
 		}
 
+		if(player_length == 16 && player->size > 150 && food->type == VIRUS)
+		{
+			foodToGo = food;
+			tmp = NULL;
+			continue;
+		}
+
 		double distance = getDistance(food, player);
-		float val = food->size * food->size / distance;
+		float val = food->size / distance;
 		if(val > foodValue)
 		{
 			foodValue = val;
@@ -629,6 +713,10 @@ void AddNode(unsigned char* data)
 {
 	unsigned int id;
 	memcpy(&id, data, sizeof(unsigned int));
+
+	//Node* node = NodeStack_get(nodes, id);
+	//if(node != NULL && NodeStack_find(playerNodes, node->nodeID))
+	//	NodeStack_push(&playerNodes, node);
 
 	newPlayerNodeId = id;
 }

@@ -55,7 +55,7 @@ Circle Node2Circle(Node* node)
 {
 	Vec2 zoom = getZoom();
 	Circle ret;
-	ret.radius = node->size * WINDOW_WIDTH / zoom.x;
+	ret.radius = node->size * WINDOW_HEIGTH / zoom.y;
 	ret.x = node->x;
 	ret.y = node->y;
 	ret.color.r = node->R;
@@ -141,6 +141,13 @@ void Clear()
 
 void Render()
 {
+	//int borderScreenLeft = (viewField.left - centerPosX + sightRangeX / 2) * screenHeight / sightRangeY;
+	//int borderScreenRight = (viewField.right - centerPosX + sightRangeX / 2) * screenHeight / sightRangeY;
+	//int borderScreenTop = (viewField.top - centerPosY + sightRangeY / 2) * screenHeight / sightRangeY;
+	//int borderScreenBottom = (viewField.bottom - centerPosY + sightRangeY / 2) * screenHeight / sightRangeY;
+	//rectangleRGBA(pRenderer, borderScreenLeft, borderScreenTop, borderScreenRight, borderScreenBottom, borderColorR, borderColorG, borderColorB, 255);
+
+
 	DrawAllNodes();
 
 	SDL_SetRenderDrawColor(pRenderer, 225, 225, 225, 255);
