@@ -357,6 +357,8 @@ void IAV2(struct lws* wsi)
 
 	Node* split_target = NULL;
 
+	puts("[IA] Looking around...");
+
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
 	{
@@ -391,10 +393,13 @@ void IAV2(struct lws* wsi)
 		tmp = tmp->next;
 	}
 
+	puts("[IA] Figured out what's around !");
+
 	if(NodeStack_length(threats) > 0)
 	{
 		Vec2 offset;
 		tmp = threats;
+		puts("[IA] Looking for threats !");
 		while(tmp != NULL)
 		{
 			Node* node = tmp->node;
@@ -426,6 +431,8 @@ void IAV2(struct lws* wsi)
 
 			drawDebugCircle(enemiePos.x, enemiePos.y, secureDistance, 255, 0, 0);
 
+			printf("[IA] Done with threats %d! add (%d, %d) to target.\n", node->nodeID, offset.x, offset.y);
+
 			tmp = tmp->next;
 		}
 
@@ -435,11 +442,15 @@ void IAV2(struct lws* wsi)
 		Move(wsi, target);
 		drawDebugLine(World2Screen(playerPos, playerPos), target, 0, 0, 255);
 
+		printf("[IA] Done with threats, move to (%d, %d)\n", target.x, target.y);
+
 		return;
 	}
 
 	if(NodeStack_length(splitTargets) > 0)
 	{
+		puts("[IA] We have some splitTargets !");
+
 		Node* starget = NULL;
 		double value = 0;
 		tmp = splitTargets;
@@ -468,6 +479,8 @@ void IAV2(struct lws* wsi)
 		Move(wsi, target);
 		Split(wsi);
 
+		printf("[IA] Split to (%d, %d)\n", target.x, target.y);
+
 		return;
 	}
 
@@ -494,6 +507,8 @@ void IAV2(struct lws* wsi)
 	Node* foodToGo;
 	float foodValue = 0;
 
+	puts("[IA] find which food is the best !");
+
 	tmp = foods;
 	while(tmp != NULL)
 	{
@@ -513,6 +528,7 @@ void IAV2(struct lws* wsi)
 
 		double distance = getDistance(food, player);
 		float val = food->size / distance;
+		printf("	[IA] %d (%d, %d) has %f value\n", food->nodeID, food->x, food->y, val);
 		if(val > foodValue)
 		{
 			foodValue = val;
@@ -525,6 +541,8 @@ void IAV2(struct lws* wsi)
 	target = NodetoVec2(foodToGo);
 	Move(wsi, target);
 	drawDebugLine(World2Screen(playerPos, playerPos), World2Screen(target, playerPos), 0, 255, 0);
+
+	printf("[IA] Done with foods, move to (%d, %d)\n\n\n", target.x, target.y);
 }
 
 void IAUpdate(struct lws *wsi)
