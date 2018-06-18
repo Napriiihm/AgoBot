@@ -16,6 +16,30 @@ void drawDebugCircle(short x, short y, short radius, char r, char g, char b)
 	aacircleRGBA(pRenderer, x, y, radius, r, g, b, 255);
 }
 
+void drawWalls()
+{
+	if(player == NULL)
+		return;
+
+	Vec2 topLeft, topRight, bottomLeft, bottomRight;
+	topLeft.x = 0; topLeft.y = 0;
+	topRight.x = 7200; topRight.y = 0;
+	bottomLeft.x = 0; bottomLeft.y = 3200;
+	bottomRight.x = 7200; bottomRight.y = 3200;
+
+	Vec2 playerPos = NodetoVec2(player);
+
+	topLeft = World2Screen(topLeft, playerPos);
+	topRight = World2Screen(topRight, playerPos);
+	bottomLeft = World2Screen(bottomLeft, playerPos);
+	bottomRight = World2Screen(bottomRight, playerPos);
+
+	drawDebugLine(topLeft, topRight, 0, 0, 0);
+	drawDebugLine(topRight, bottomRight, 0, 0, 0);
+	drawDebugLine(bottomRight, bottomLeft, 0, 0, 0);
+	drawDebugLine(bottomLeft, topLeft, 0, 0, 0);
+}
+
 int InitUI()
 {
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
@@ -141,12 +165,7 @@ void Clear()
 
 void Render()
 {
-	//int borderScreenLeft = (viewField.left - centerPosX + sightRangeX / 2) * screenHeight / sightRangeY;
-	//int borderScreenRight = (viewField.right - centerPosX + sightRangeX / 2) * screenHeight / sightRangeY;
-	//int borderScreenTop = (viewField.top - centerPosY + sightRangeY / 2) * screenHeight / sightRangeY;
-	//int borderScreenBottom = (viewField.bottom - centerPosY + sightRangeY / 2) * screenHeight / sightRangeY;
-	//rectangleRGBA(pRenderer, borderScreenLeft, borderScreenTop, borderScreenRight, borderScreenBottom, borderColorR, borderColorG, borderColorB, 255);
-
+	drawWalls();
 
 	DrawAllNodes();
 

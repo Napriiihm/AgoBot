@@ -103,6 +103,8 @@ void Move(struct lws *wsi, Vec2 pos)
 	memcpy(packet+1, &pos, sizeof(pos));
 
 	sendCommand(wsi, packet, 13);
+
+	printf("Send move packet\n");
 }
 
 void MoveZero(struct lws* wsi)
@@ -528,11 +530,11 @@ void IAV2(struct lws* wsi)
 
 		double distance = getDistance(food, player);
 		float val = food->size / distance;
-		printf("	[IA] %d (%d, %d) has %f value\n", food->nodeID, food->x, food->y, val);
 		if(val > foodValue)
 		{
 			foodValue = val;
-			foodToGo = food;			
+			foodToGo = food;
+			printf("	[IA] %d (%d, %d) has %f value\n", food->nodeID, food->x, food->y, val);
 		}
 
 		tmp = tmp->next;
