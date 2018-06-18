@@ -11,7 +11,7 @@ void drawDebugLine(Vec2 start, Vec2 end, char r, char g, char b)
 	aalineRGBA(pRenderer, start.x, start.y, end.x, end.y, r, g, b, 255);
 }
 
-void drawDebugCircle(short x, short y, short radius, char r, char g, char b)
+void drawDebugCircle(int x, int y, short radius, char r, char g, char b)
 {
 	aacircleRGBA(pRenderer, x, y, radius, r, g, b, 255);
 }
@@ -27,6 +27,17 @@ void drawWalls()
 	bottomLeft.x = 0; bottomLeft.y = 3200;
 	bottomRight.x = 7200; bottomRight.y = 3200;
 
+	Vec2 topLeftWall, topRightWall, bottomLeftWall, bottomRightWall;
+
+	topLeftWall.x = topLeft.x + WALL_ESCAPE_DISTANCE;
+	topLeftWall.y = topLeft.y + WALL_ESCAPE_DISTANCE;
+	topRightWall.x = topRight.x - WALL_ESCAPE_DISTANCE;
+	topRightWall.y = topRight.y + WALL_ESCAPE_DISTANCE;
+	bottomLeftWall.x = bottomLeft.x - WALL_ESCAPE_DISTANCE;
+	bottomLeftWall.y = bottomLeft.y + WALL_ESCAPE_DISTANCE;
+	bottomRightWall.x = bottomRight.x - WALL_ESCAPE_DISTANCE;
+	bottomRightWall.y = bottomRight.y - WALL_ESCAPE_DISTANCE;
+
 	Vec2 playerPos = NodetoVec2(player);
 
 	topLeft = World2Screen(topLeft, playerPos);
@@ -34,10 +45,20 @@ void drawWalls()
 	bottomLeft = World2Screen(bottomLeft, playerPos);
 	bottomRight = World2Screen(bottomRight, playerPos);
 
+	topLeftWall = World2Screen(topLeftWall, playerPos);
+	topRightWall = World2Screen(topRightWall, playerPos);
+	bottomLeftWall = World2Screen(bottomLeftWall, playerPos);
+	bottomRightWall = World2Screen(bottomRightWall, playerPos);
+
 	drawDebugLine(topLeft, topRight, 0, 0, 0);
 	drawDebugLine(topRight, bottomRight, 0, 0, 0);
 	drawDebugLine(bottomRight, bottomLeft, 0, 0, 0);
 	drawDebugLine(bottomLeft, topLeft, 0, 0, 0);
+
+	drawDebugLine(topLeftWall, topRightWall, 0, 255, 255);
+	drawDebugLine(topRightWall, bottomRightWall, 0, 255, 255);
+	drawDebugLine(bottomRightWall, bottomLeftWall, 0, 255, 255);
+	drawDebugLine(bottomLeftWall, topLeftWall, 0, 255, 255);
 }
 
 int InitUI()

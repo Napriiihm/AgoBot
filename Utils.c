@@ -10,18 +10,14 @@ double Vec2_length(Vec2 vec)
 	return sqrt(pow(vec.x, 2) + pow(vec.y, 2));
 }
 
+int getMass(Node* node)
+{
+	return sqrt(100 * node->size);
+}
+
 double splitDistance(Node* node)
 {
-	if(node == NULL)
-		return 0;
-
-	unsigned short size = node->size;
-	double pipi = M_PI * M_PI;
-	double modif = 3 + log(1 + size) / 10;
-	double splitSpeed = 35 * min(pow(size, -M_PI / pipi / 10) * modif, 150);
-	double ret = max(splitSpeed * 12.8, size * 2);
-
-	return ret;
+	return node->size * 2.f;
 }
 
 Node* NodeStack_getLargest(NodeStack* list)
@@ -271,7 +267,7 @@ void NodeStack_update(NodeStack** list, Node* elem)
 
 double getDistance(Node* n1, Node* n2)
 {
-	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2));
+	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2)) - n1->size - n2->size;
 }
 
 double getDist(Vec2 a, Vec2 b)
@@ -279,10 +275,29 @@ double getDist(Vec2 a, Vec2 b)
 	return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
-Vec2f Vec2f_normalize(Vec2 vec)
+double getDistf(Vec2f a, Vec2f b)
+{
+	return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+
+Vec2f Vec2f_normalize(Vec2f vec)
+{
+	Vec2f zero;
+	memset(&zero, 0, sizeof(Vec2f));
+
+	double dist = getDistf(zero, vec);
+
+	Vec2f ret;
+	ret.x = vec.x / dist;
+	ret.y = vec.y / dist;
+
+	return ret; 
+}
+
+Vec2f Vec2_normalize(Vec2 vec)
 {
 	Vec2 zero;
-	memset(&zero, 0, sizeof(Vec2f));
+	memset(&zero, 0, sizeof(Vec2));
 
 	double dist = getDist(zero, vec);
 

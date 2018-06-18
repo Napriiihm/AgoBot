@@ -110,9 +110,9 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
 				Clear();
 
-				//IAV3(wsi);
+				IAV3(wsi);
 				//IAV2(wsi);
-				IAUpdate(wsi);
+				//IAUpdate(wsi);
 
 				Loop(&forceExit);
 

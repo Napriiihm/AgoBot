@@ -12,8 +12,8 @@
 
 typedef struct Vec2
 {
-	unsigned int x;
-	unsigned int y;
+	int x;
+	int y;
 } Vec2;
 
 typedef struct Vec2f
@@ -89,17 +89,21 @@ Node* NodeStack_getLargest(NodeStack* list);
 
 double getDistance(Node* n1, Node* n2);
 double getDist(Vec2 a, Vec2 b);
+double getDistf(Vec2f a, Vec2f b);
 unsigned int getFoodNum(NodeStack* list);
 
 ZONE getZone(Node* p);
 Vec2 gotoZone(ZONE zone);
 ZONE getOppositeZone();
 
-Vec2f Vec2f_normalize(Vec2 vec);
+Vec2f Vec2_normalize(Vec2 vec);
+Vec2f Vec2f_normalize(Vec2f vec);
 double Vec2_length(Vec2 vec);
 Vec2f Vec2toVec2f(Vec2 vec);
 Vec2 Vec2ftoVec2(Vec2f vec);
 Vec2 NodetoVec2(Node* node);
+
+int getMass(Node* node);
 
 double splitDistance(Node* node);
 
