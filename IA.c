@@ -100,6 +100,7 @@ void Move(struct lws *wsi, Vec2 pos)
 	unsigned char* packet = malloc(13);
 	memset(packet, 0, 13);
 	*packet = 16;
+
 	memcpy(packet+1, &pos, sizeof(pos));
 
 	sendCommand(wsi, packet, 13);
@@ -124,7 +125,297 @@ void Split(struct lws *wsi)
 
 char canSplit(Node* node1, Node* node2)
 {
-	return (node1->size / (float)node2->size > 2.8f && node1->size / (float)node2->size < 20.f);
+	return (node1->size / (float)node2->size > 2.28f);
+}
+
+void IAUpdate(struct lws *wsi)
+{
+	if(player == NULL)
+	{
+		MoveZero(wsi);
+		return;
+	}
+
+	Vec2 playerPos; playerPos.x = player->x; playerPos.y = player->y;
+	Vec2 playerPosScreen = World2Screen(playerPos, playerPos);
+
+	if(split_timer > 0)
+		split_timer--;
+
+	NodeStack* avoids = NULL, *viruses = NULL;
+	Node* small = NULL;
+	Node* split_ball = NULL;
+	double small_dist = 0;
+	unsigned int small_value = 0;
+
+	unsigned int zoneVal = getFoodNum(nodes);
+
+	unsigned int marge = DEFAULT_MARGE;
+	//drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
+
+	puts("[IA] Looking around...");
+
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		Node* node = tmp->node;
+		if(node == NULL || player == node || node->size == 0 || player->size == 0 || (node->type == PLAYER && strcmp(node->name, BotName) == 0))
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		double dist = getDistance(player, node) - node->size;
+		if(node->type == VIRUS)
+		{
+			if(player->size > node->size && dist < node->size && player_length != 16)
+			{
+				NodeStack_push(&avoids, node);
+				NodeStack_push(&viruses, node);
+			}
+			if(player->size > node->size && player_length != 16)
+			{
+				Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
+				drawDebugCircle(nodePos.x, nodePos.y, node->size, 255, 0, 0);
+			}
+		}
+		else if(node->size / player->size > 1.3f)
+		{
+			marge = DEFAULT_MARGE;
+
+			if(canSplit(player, node))
+			{
+				exit(1);
+				Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
+				drawDebugCircle(nodePos.x, nodePos.y, splitDistance(node), 255, 255, 100);
+			}
+
+			if(node->size / player->size <= 3.5f && node->size / player->size > 1.5f)
+                marge = 300;
+
+            Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
+            drawDebugCircle(nodePos.x, nodePos.y, marge, 255, 0, 0);
+
+            if (dist < marge)
+               	NodeStack_push(&avoids, node);
+		}
+		else if(player->size / node->size > 1.3f)
+		{
+			char dontGo = 0;
+			NodeStack *tmp2 = viruses;
+			while(tmp2 != NULL)
+			{
+				if(tmp2->node == NULL)
+				{
+					tmp2 = tmp2->next;
+					continue;
+				}
+				if(getDistance(tmp2->node, node) < tmp2->node->size)
+					dontGo = 1;
+
+				tmp2 = tmp2->next;
+			}
+
+			if(dontGo)
+			{
+				tmp = tmp->next;
+				continue;
+			}
+
+			/* Enemy split */
+			if(player_length < 4 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
+			{
+				printf("Splitting\n");
+				split_ball = node;
+			}			
+
+            if(getDistance(node, player) < 5000)
+            {
+            	if(node->type == VIRUS && player->size > 110)
+            	{
+            		small = node;
+            	}
+            	else if(small == NULL || pow(dist, 2) / node->size < small_dist)
+            	{
+            		if(small_value == 0)
+            			small_value = node->size * 5;
+            		else
+            			small_value--;
+
+            		if(small_value > 0)
+            		{
+            			small = node;
+            			small_dist = pow(dist, 2) / node->size;
+            		}
+            	}
+            }
+		}
+		tmp = tmp->next;
+	}
+
+	puts("[IA] Figured out what's around !");
+
+	if(NodeStack_length(avoids) > 0)
+	{
+		puts("[IA] Warning, threats arround !");
+		///TODO fix avoid target
+		Vec2 target = playerPos;
+		NodeStack* tmp = avoids;
+		while(tmp != NULL)
+		{
+			Node* node = tmp->node;
+
+			Vec2 Line;
+			Line.x = node->x;
+			Line.y = node->y;
+
+			Line = World2Screen(Line, playerPos);
+			drawDebugLine(playerPosScreen, Line, 255, 0, 0);
+			
+			Vec2 offset;
+			offset.x = player->x - node->x;
+			offset.y = player->y - node->y;
+
+			target.x += offset.x;
+			target.y += offset.y;
+
+			printf("[IA] Done with threats %d! add (%d, %d) to target.\n", node->nodeID, offset.x, offset.y);
+
+			tmp = tmp->next;
+		}
+
+		if(player->x - player->size < 0 + WALL_ESCAPE_DISTANCE)
+			target.x += WALL_VALUE;
+		else if(player->x + player->size > 7200 - WALL_ESCAPE_DISTANCE)
+			target.x -= WALL_VALUE;
+
+		if(player->y - player->size < 0 + WALL_ESCAPE_DISTANCE)
+			target.y += WALL_VALUE;
+		else if(player->y + player->size > 3200 - WALL_ESCAPE_DISTANCE)
+			target.y -= WALL_VALUE;
+
+		Move(wsi, target);
+
+		target = World2Screen(target, playerPos);
+		drawDebugLine(playerPosScreen, target, 0, 0, 255);
+
+		printf("[IA] Done with threats, move to (%d, %d)\n", target.x, target.y);
+	}
+	else if(split_ball != NULL)
+	{
+		puts("[IA] We have some splitTargets !");
+
+		Vec2 target;
+		target.x = split_ball->x;
+		target.y = split_ball->y;
+
+		Move(wsi, target);
+		Split(wsi);
+
+		printf("[IA] Split to (%d, %d)\n", target.x, target.y);
+	}
+	else if(small)
+	{
+		Vec2 target;
+		target.x = small->x;
+		target.y = small->y;
+
+		Move(wsi, target);
+
+		target = World2Screen(target, playerPos);
+		drawDebugLine(playerPosScreen, target, 0, 255, 0);
+
+		const char* name = "food";
+		printf("Hunting %s (%d)\n", small->type==PLAYER ? small->name : name, small_value);
+	}
+	else
+	{
+		ZONE zone = getOppositeZone();
+		Vec2 pos = gotoZone(zone);
+		Move(wsi, pos);
+		printf("Nothings, goto(%d, %d)\n", pos.x, pos.y);
+	}
+	puts("\n\n");
+}
+
+void AddNode(unsigned char* data)
+{
+	unsigned int id;
+	memcpy(&id, data, sizeof(unsigned int));
+
+	//Node* node = NodeStack_get(nodes, id);
+	//if(node != NULL && NodeStack_find(playerNodes, node->nodeID))
+	//	NodeStack_push(&playerNodes, node);
+
+	newPlayerNodeId = id;
+}
+
+void IARecv(unsigned char* payload, int* exit)
+{
+	unsigned char opcode = payload[0];
+	switch(opcode)
+	{
+	case 16:
+		UpdateNodes(payload+1);
+		break;
+
+	case 17:
+		//printf("View Update\n");
+		break;
+
+	case 18:
+		//printf("Reset all Cells\n");
+		NodeStack_clear(&nodes);
+		break;
+
+	case 20:
+		//printf("Reset owned cells\n");
+		NodeStack_clear(&playerNodes);
+		break;
+
+	case 21:
+		//printf("Draw debug line\n");
+		break;
+
+	case 32:
+		//printf("Owns blob\n");
+		AddNode(payload+1);
+		break;
+
+	case 49:
+		//printf("FFA Leaderboard\n");
+		break;
+
+	case 50:
+		//printf("Team Leaderboard\n");
+		break;
+
+	case 64:
+		//printf("Game area size\n");
+		//memcpy(map, payload+1, sizeof(Map));
+		//player->x = map->right - map->left;
+		//player->y = map->top / 2.f;
+		//printf("PlayerPos(%f, %f)\n", player->x, player->y);
+		//printf("MapPos(b:%f, t;%f, r;%f, l:%f)\n", map->bottom, map->top, map->right, map->left);
+		break;
+
+	case 72:
+		//printf("HelloHelloHello\n");
+		break;
+
+	case 240:
+		//printf("Message length\n");
+		break;
+
+	case 0:
+		break;
+
+	default:
+		printf("Unknown opcode : %x\n", opcode);
+		break;
+	}
+
+	//Loop(exit);
 }
 
 void IAV3(struct lws* wsi)
@@ -338,9 +629,6 @@ void IAV3(struct lws* wsi)
 		tmp = tmp->next;
 		i++;
 	}
-
-
-
 }
 
 void IAV2(struct lws* wsi)
@@ -545,266 +833,4 @@ void IAV2(struct lws* wsi)
 	drawDebugLine(World2Screen(playerPos, playerPos), World2Screen(target, playerPos), 0, 255, 0);
 
 	printf("[IA] Done with foods, move to (%d, %d)\n\n\n", target.x, target.y);
-}
-
-void IAUpdate(struct lws *wsi)
-{
-	if(player == NULL)
-	{
-		MoveZero(wsi);
-		return;
-	}
-
-	Vec2 playerPos; playerPos.x = player->x; playerPos.y = player->y;
-	Vec2 playerPosScreen = World2Screen(playerPos, playerPos);
-
-	if(split_timer > 0)
-		split_timer--;
-
-	NodeStack* avoids = NULL;
-	Node* small = NULL;
-	Node* split_ball = NULL;
-	double small_dist = 0;
-	unsigned int small_value = 0;
-
-	unsigned int zoneVal = getFoodNum(nodes);
-
-	unsigned int marge = player->size * 4;
-	//drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
-
-	NodeStack* tmp = nodes;
-	while(tmp != NULL)
-	{
-		Node* node = tmp->node;
-		if(node == NULL || player == node || node->size == 0 || player->size == 0 || (node->type == PLAYER && strcmp(node->name, BotName) == 0))
-		{
-			tmp = tmp->next;
-			continue;
-		}
-
-		double dist = getDistance(player, node) - node->size;
-		/*if(node->type == VIRUS)
-		{
-			if(player->size > node->size * 1.1f)
-				small = node;
-			//if(player->size > node->size && dist < node->size && player->size < 150)
-			//	NodeStack_push(&avoids, node);
-		}
-		else*/ if(node->size / player->size > 1.3f && node->type != VIRUS)
-		{
-			marge = 1000;
-
-			if(player_length > 2)
-				marge = 1500;
-			else if (node->size / player->size <= 3.5f && node->size / player->size > 1.5f)
-                marge = 1200;
-
-            if (dist < marge)
-               	NodeStack_push(&avoids, node);
-		}
-		else if(player->size / node->size > 1.1f)
-		{
-			/* Enemy split */
-			/*if(player_length < 4 && split_timer == 0 && player->size > 70 && dist < 5000 && player->size / 2.6 > node->size && player->size / 5 < node->size && node->type == PLAYER)
-			{
-				printf("Splitting\n");
-				split_ball = node;
-			}*/
-			
-
-			/* Always split */
-			
-			if(split_timer == 0 && player->size > 150 && player_length < 3)
-			{
-				printf("Splitting\n");
-				split_ball = node;
-			}
-			
-
-            if(getDistance(node, player) < 5000)
-            {
-            	if(node->type == VIRUS && player->size > 110)
-            	{
-            		small = node;
-            	}
-            	else if(small == NULL || pow(dist, 2) / node->size < small_dist)
-            	{
-            		//puts("Food");
-            		if(small_value == 0)
-            			small_value = node->size * 5;
-            		else
-            			small_value--;
-
-            		if(small_value > 0)
-            		{
-            			small = node;
-            			small_dist = pow(dist, 2) / node->size;
-            		}
-            	}
-            }
-		}
-		tmp = tmp->next;
-	}
-
-	if(NodeStack_length(avoids) > 0)
-	{
-		///TODO fix avoid target
-		
-		Vec2 target = playerPos;
-		NodeStack* tmp = avoids;
-		while(tmp != NULL)
-		{
-			Node* node = tmp->node;
-
-			Vec2 Line;
-			Line.x = node->x;
-			Line.y = node->y;
-
-			Line = World2Screen(Line, playerPos);
-			drawDebugLine(playerPosScreen, Line, 255, 0, 0);
-			
-			Vec2 offset;
-			offset.x = player->x - node->x;
-			offset.y = player->y - node->y;
-			
-			target.x += offset.x;
-			target.y += offset.y;
-
-			tmp = tmp->next;
-		}
-
-		Move(wsi, target);
-
-		target = World2Screen(target, playerPos);
-		drawDebugLine(playerPosScreen, target, 0, 0, 255);
-
-		printf("Avoiding '%d' balls, goto(%u, %u)\n", NodeStack_length(avoids), target.x, target.y);
-	}
-	/*else if(zoneVal < 10)
-	{
-		ZONE PlayerZone = getZone(player);
-		ZONE targetZone;
-		if(PlayerZone == LEFT_UP)
-			targetZone = RIGHT_DOWN;
-		else if(PlayerZone == LEFT_DOWN)
-			targetZone = RIGHT_UP;
-		else if(PlayerZone == RIGHT_UP)
-			targetZone = LEFT_DOWN;
-		else
-			targetZone = LEFT_UP;
-
-		Move(wsi, gotoZone(targetZone));
-		printf("Changing zone...\n");
-	}*/
-	else if(split_ball != NULL)
-	{
-		Vec2 target;
-		target.x = split_ball->x;
-		target.y = split_ball->y;
-
-		Move(wsi, target);
-		Split(wsi);
-		printf("Splitting\n");
-	}
-	else if(small)
-	{
-		Vec2 target;
-		target.x = small->x;
-		target.y = small->y;
-
-		Move(wsi, target);
-
-		target = World2Screen(target, playerPos);
-		drawDebugLine(playerPosScreen, target, 0, 255, 0);
-
-		const char* name = "food";
-		printf("Hunting %s (%d)\n", small->type==PLAYER ? small->name : name, small_value);
-	}
-	else
-	{
-		ZONE zone = getOppositeZone();
-		Vec2 pos = gotoZone(zone);
-		Move(wsi, pos);
-		printf("Nothings, goto(%d, %d)\n", pos.x, pos.y);
-	}
-}
-
-void AddNode(unsigned char* data)
-{
-	unsigned int id;
-	memcpy(&id, data, sizeof(unsigned int));
-
-	//Node* node = NodeStack_get(nodes, id);
-	//if(node != NULL && NodeStack_find(playerNodes, node->nodeID))
-	//	NodeStack_push(&playerNodes, node);
-
-	newPlayerNodeId = id;
-}
-
-void IARecv(unsigned char* payload, int* exit)
-{
-	unsigned char opcode = payload[0];
-	switch(opcode)
-	{
-	case 16:
-		UpdateNodes(payload+1);
-		break;
-
-	case 17:
-		//printf("View Update\n");
-		break;
-
-	case 18:
-		//printf("Reset all Cells\n");
-		NodeStack_clear(&nodes);
-		break;
-
-	case 20:
-		//printf("Reset owned cells\n");
-		NodeStack_clear(&playerNodes);
-		break;
-
-	case 21:
-		//printf("Draw debug line\n");
-		break;
-
-	case 32:
-		//printf("Owns blob\n");
-		AddNode(payload+1);
-		break;
-
-	case 49:
-		//printf("FFA Leaderboard\n");
-		break;
-
-	case 50:
-		//printf("Team Leaderboard\n");
-		break;
-
-	case 64:
-		//printf("Game area size\n");
-		//memcpy(map, payload+1, sizeof(Map));
-		//player->x = map->right - map->left;
-		//player->y = map->top / 2.f;
-		//printf("PlayerPos(%f, %f)\n", player->x, player->y);
-		//printf("MapPos(b:%f, t;%f, r;%f, l:%f)\n", map->bottom, map->top, map->right, map->left);
-		break;
-
-	case 72:
-		//printf("HelloHelloHello\n");
-		break;
-
-	case 240:
-		//printf("Message length\n");
-		break;
-
-	case 0:
-		break;
-
-	default:
-		printf("Unknown opcode : %x\n", opcode);
-		break;
-	}
-
-	//Loop(exit);
 }

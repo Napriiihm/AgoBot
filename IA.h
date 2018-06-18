@@ -17,6 +17,9 @@
 #define SPLIT_DISTANCE 710
 #define DANGER_DISTANCE 50
 #define FOOD_VALUE 10
+#define WALL_VALUE 100
+#define WALL_ESCAPE_DISTANCE 100
+#define DEFAULT_MARGE 200
 
 const char* BotName;
 
