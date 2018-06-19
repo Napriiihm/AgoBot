@@ -41,6 +41,7 @@ void UpdateNodes(unsigned char* data)
 		Node* node = malloc(sizeof(Node)); //on alloue la memoire pour la cellule qu'on crée
 
 		memcpy(node, pos, NodeSize); //on copie toute les donnée recu dans notre cellule
+		node->isSafe = 1;
 
 		if(newPlayerNodeId == node->nodeID)
 		{
@@ -145,7 +146,7 @@ void IAUpdate(struct lws *wsi)
 	if(split_timer > 0)
 		split_timer--;
 
-	NodeStack* avoids = NULL, *foods = NULL;
+	NodeStack* avoids = NULL, *foods = NULL, *passiveThreats = NULL;
 	Node* small = NULL;
 	Node* split_ball;
 
@@ -158,10 +159,8 @@ void IAUpdate(struct lws *wsi)
 	unsigned int zoneVal = getFoodNum(nodes);
 
 	unsigned int marge = DEFAULT_MARGE;
-	//drawDebugCircle(playerPosScreen.x, playerPosScreen.y, marge, 255, 200, 0);
 
 	puts("[IA] Looking around...");
-
 	NodeStack* tmp = nodes;
 	while(tmp != NULL)
 	{
@@ -172,12 +171,13 @@ void IAUpdate(struct lws *wsi)
 			continue;
 		}
 
+		Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
 		double dist = getDistance(player, node);
 		if(node->type == VIRUS)
 		{
 			if(player->size > 105 && player_length != 16)
 			{
-				Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
+				NodeStack_push(&passiveThreats, node);
 				drawDebugCircle(nodePos.x, nodePos.y, node->size + AVOID_VIRUS_DISTANCE, 255, 0, 0);
 				if(dist < AVOID_VIRUS_DISTANCE)
 					NodeStack_push(&avoids, node);
@@ -186,27 +186,90 @@ void IAUpdate(struct lws *wsi)
 		else if(node->size > player->size)
 		{
 			marge = DEFAULT_MARGE;
+			NodeStack_push(&passiveThreats, node);
 
 			if(canSplit(node, player))
 			{
-				Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
 				drawDebugCircle(nodePos.x, nodePos.y, splitDistance(node), 255, 255, 0);
 				marge = splitDistance(node);
 			}
 
-            Vec2 nodePos = World2Screen(NodetoVec2(node), playerPos);
             drawDebugCircle(nodePos.x, nodePos.y, marge, 255, 0, 0);
 
             if (dist < marge)
                	NodeStack_push(&avoids, node);
 		}
-		else if(player->size / node->size > 1.3f && node->type != VIRUS)
+		else if(player->size / node->size > 1.1f && node->type != VIRUS)
 			NodeStack_push(&foods, node);		
 
 		tmp = tmp->next;
 	}
-
 	puts("[IA] Figured out what's around !");
+
+	tmp = passiveThreats;
+	while(tmp != NULL)
+	{
+		Node* node = tmp->node;
+		if(node == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		double dangerRadius = 0;
+		if(node->type == VIRUS && player->size > 105 && player_length != 16)
+			dangerRadius = node->size + AVOID_VIRUS_DISTANCE;
+		else if(node->size / player->size > 1.1f)
+		{
+			if(canSplit(node, player))
+				dangerRadius = splitDistance(node);
+			else
+				dangerRadius = DEFAULT_MARGE;
+		}
+
+		NodeStack* tmp2 = foods;
+		while(tmp2 != NULL)
+		{
+			Node* food = tmp2->node;
+			if(food == NULL)
+			{
+				tmp2 = tmp2->next;
+				continue;
+			}
+
+			double dist = getDistance(food, node);
+			if(dist <= dangerRadius)
+				food->isSafe = 0;
+
+			tmp2 = tmp2->next;
+		}
+
+		tmp = tmp->next;
+	}
+
+	NodeStack* safeFoods = NULL;
+	tmp = foods;
+	while(tmp != NULL)
+	{
+		Node* food = tmp->node;
+		if(food == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		Vec2 nodePos = World2Screen(NodetoVec2(food), playerPos);
+
+		if(food->isSafe)
+		{
+			NodeStack_push(&safeFoods, food);
+			drawDebugCircle(nodePos.x, nodePos.y, food->size / 2, 0, 255, 0);
+		}
+		else
+			drawDebugCircle(nodePos.x, nodePos.y, food->size / 2, 255, 0, 0);
+
+		tmp = tmp->next;
+	}
 
 	if(NodeStack_length(avoids) > 0)
 	{
@@ -248,40 +311,16 @@ void IAUpdate(struct lws *wsi)
 		target = World2Screen(target, playerPos);
 		drawDebugLine(playerPosScreen, target, 0, 0, 255);
 
-		printf("[IA] Done with threats, move to (%d, %d)\n", target.x, target.y);
+		printf("[IA] Done with threats, move to (%d, %d)\n\n", target.x, target.y);
 
 		return;
 	}
 
-	tmp = foods;
+	tmp = safeFoods;
 	while(tmp != NULL)
 	{
 		Node* food = tmp->node;
 		if(food == NULL)
-		{
-			tmp = tmp->next;
-			continue;
-		}
-
-		char dontgo = 0;
-		NodeStack* tmp2 = avoids;
-		while(tmp2 != NULL)
-		{
-			Node* threat = tmp->node;
-			if(threat == NULL)
-			{
-				tmp2 = tmp2->next;
-				continue;
-			}
-
-			double distan = getDistance(food, threat);
-			if(distan < DEFAULT_MARGE)
-				dontgo = 1;
-
-			tmp2 = tmp2->next;
-		}
-
-		if(dontgo)
 		{
 			tmp = tmp->next;
 			continue;
@@ -347,7 +386,7 @@ void IAUpdate(struct lws *wsi)
 		Move(wsi, pos);
 		printf("Nothings, goto(%d, %d)\n", pos.x, pos.y);
 	}
-	puts("\n\n");
+	puts("\n");
 }
 
 void AddNode(unsigned char* data)

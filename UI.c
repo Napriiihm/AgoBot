@@ -188,8 +188,6 @@ void Render()
 {
 	drawWalls();
 
-	DrawAllNodes();
-
 	SDL_SetRenderDrawColor(pRenderer, 225, 225, 225, 255);
 
 	SDL_RenderPresent(pRenderer);

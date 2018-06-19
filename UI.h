@@ -31,6 +31,8 @@ int InitUI();
 void Loop(int* exit);
 void Clear();
 
+void DrawAllNodes();
+
 Vec2 World2Screen(Vec2 pos, Vec2 playerPos);
 
 void drawDebugLine(Vec2 start, Vec2 end, char r, char g, char b);
