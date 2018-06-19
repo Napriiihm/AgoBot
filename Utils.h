@@ -107,6 +107,10 @@ Vec2 NodetoVec2(Node* node);
 int getMass(Node* node);
 
 double splitDistance(Node* node);
+char virusSurLeChemin(Node *food);
+
+char isNearWall(Node* node);
+void escapeWall(Node* node, Vec2* target);
 
 void printHex(char* data, size_t size);
              

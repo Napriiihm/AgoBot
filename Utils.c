@@ -5,6 +5,70 @@
 double max(double a, double b) { return (a > b) ? a : b; }
 double min(double a, double b) { return (a > b) ? b : a; }
 
+char isNearWall(Node* node)
+{
+	if(node->x - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 7200 - WALL_ESCAPE_DISTANCE)
+		return 1;
+
+	if(node->y - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 3200 - WALL_ESCAPE_DISTANCE)
+		return 1;
+
+	return 0;
+}
+
+void escapeWall(Node* node, Vec2* target)
+{
+	if(node->x - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 7200 - WALL_ESCAPE_DISTANCE)
+		target->x = -target->x;
+
+	if(node->y - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 3200 - WALL_ESCAPE_DISTANCE)
+		target->y = -target->y;
+}
+
+char virusSurLeChemin(Node *food)
+{
+	NodeStack* tmp = nodes;
+	while(tmp != NULL)
+	{
+		Node* virus = tmp->node;
+		if(virus == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		if(virus->type == VIRUS)
+		{
+			double distancePlayerVirus = getDistance(player, virus);
+			double distancePlayerFood = getDistance(player, food);
+
+			if(player->x - virus->x == 0)
+			{
+				if(distancePlayerFood > distancePlayerVirus - virus->size || getDistance(virus, food) < virus->size) 
+					return 1;
+			}
+			else
+			{
+				double marge = 2 * player->size + player->size;
+				double angleVirus = atan((virus->size + marge) / distancePlayerVirus);
+
+				double a = (player->y - virus->y) / (player->x - virus->x);
+				double b = player->y - a * player->x;
+
+				double coteOppose = abs((a * food->x - food->y + b) / sqrt(pow(a, 2) + pow(-1, 2)));
+
+				double angleFood = asin(coteOppose / distancePlayerFood);
+
+				if(distancePlayerFood > distancePlayerVirus - 1.5 * virus->size && angleFood < angleVirus || getDistance(virus, food) < virus->size)
+					return 1;
+			}
+		}
+		tmp = tmp->next;
+	}
+
+	return 0;
+}
+
 double Vec2_length(Vec2 vec)
 {
 	return sqrt(pow(vec.x, 2) + pow(vec.y, 2));
@@ -17,7 +81,7 @@ int getMass(Node* node)
 
 double splitDistance(Node* node)
 {
-	return node->size * 2.f;
+	return node->size * 3.f;
 }
 
 Node* NodeStack_getLargest(NodeStack* list)
@@ -267,7 +331,7 @@ void NodeStack_update(NodeStack** list, Node* elem)
 
 double getDistance(Node* n1, Node* n2)
 {
-	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2)) - n1->size - n2->size;
+	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2));
 }
 
 double getDist(Vec2 a, Vec2 b)

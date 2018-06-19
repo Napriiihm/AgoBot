@@ -14,11 +14,6 @@ char isPlayer(Node* node)
 	return strcmp(node->name, BotName) == 0;
 }
 
-char isNearWall()
-{
-
-}
-
 void UpdateNodes(unsigned char* data)
 {
 	player = NULL;
@@ -60,7 +55,10 @@ void UpdateNodes(unsigned char* data)
 			{
 				NodeStack_push(&playerNodes, node);
 				player_length++;
-				player = node;
+				if(player == NULL)
+					player = node;
+				else if(node->size > player->size)
+					player = node;
 				playerID = player->nodeID;
 				playerTotalSize += node->size;
 			}
@@ -178,29 +176,31 @@ void IAUpdate(struct lws *wsi)
 			if(player->size > 105 && player_length != 16)
 			{
 				NodeStack_push(&passiveThreats, node);
-				drawDebugCircle(nodePos.x, nodePos.y, node->size + AVOID_VIRUS_DISTANCE, 255, 0, 0);
-				if(dist < AVOID_VIRUS_DISTANCE)
+				drawDebugCircle(nodePos.x, nodePos.y, node->size - AVOID_VIRUS_DISTANCE, 255, 0, 0);
+				if(dist < player->size + node->size - AVOID_VIRUS_DISTANCE)
 					NodeStack_push(&avoids, node);
 			}
 		}
 		else if(node->size > player->size)
 		{
-			marge = DEFAULT_MARGE;
+			marge = DEFAULT_MARGE + node->size;
 			NodeStack_push(&passiveThreats, node);
 
-			if(canSplit(node, player))
+			/*if(canSplit(node, player))
 			{
-				drawDebugCircle(nodePos.x, nodePos.y, splitDistance(node), 255, 255, 0);
+				drawDebugCircle(nodePos.x, nodePos.y, splitDistance(node), 125, 255, 125);
 				marge = splitDistance(node);
-			}
+			}*/
 
             drawDebugCircle(nodePos.x, nodePos.y, marge, 255, 0, 0);
 
-            if (dist < marge)
+            if (dist - player->size < marge)
                	NodeStack_push(&avoids, node);
 		}
 		else if(player->size / node->size > 1.1f && node->type != VIRUS)
+		{
 			NodeStack_push(&foods, node);		
+		}
 
 		tmp = tmp->next;
 	}
@@ -238,7 +238,7 @@ void IAUpdate(struct lws *wsi)
 			}
 
 			double dist = getDistance(food, node);
-			if(dist <= dangerRadius)
+			if(dist + player->size <= dangerRadius)
 				food->isSafe = 0;
 
 			tmp2 = tmp2->next;
@@ -300,11 +300,8 @@ void IAUpdate(struct lws *wsi)
 			tmp = tmp->next;
 		}
 
-		if(player->x - player->size < WALL_ESCAPE_DISTANCE || player->x + player->size > 7200 - WALL_ESCAPE_DISTANCE)
-			target.y = -target.y;
-
-		if(player->y - player->size < WALL_ESCAPE_DISTANCE || player->x + player->size > 3200 - WALL_ESCAPE_DISTANCE)
-			target.x = -target.x;
+		if(isNearWall(player))
+			escapeWall(player, &target);
 
 		Move(wsi, target);
 
@@ -324,16 +321,17 @@ void IAUpdate(struct lws *wsi)
 		{
 			tmp = tmp->next;
 			continue;
-		}
+		}		
 
-		if(player_length < 4 && split_timer == 0 && canSplit(player, food) && food->type == PLAYER)
+		double dist = getDistance(food, player);
+
+		if(player_length < 4 && split_timer == 0 && canSplit(player, food) && food->type == PLAYER && dist < splitDistance(player))
 		{
 			printf("Splitting\n");
 			split_ball = food;
-			split_timer = 60;
-		}			
+			split_timer = 6000000;
+		}	
 
-		double dist = getDistance(food, player);
         if(dist < 5000)
         {
         	if(food->type == VIRUS && player->size > 110)
@@ -364,6 +362,8 @@ void IAUpdate(struct lws *wsi)
 
 		Move(wsi, NodetoVec2(split_ball));
 		Split(wsi);
+
+		split_ball = NULL;
 	}
 	else if(small && small->type != VIRUS)
 	{

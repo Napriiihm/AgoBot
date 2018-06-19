@@ -33,8 +33,8 @@ void drawWalls()
 	topLeftWall.y = topLeft.y + WALL_ESCAPE_DISTANCE;
 	topRightWall.x = topRight.x - WALL_ESCAPE_DISTANCE;
 	topRightWall.y = topRight.y + WALL_ESCAPE_DISTANCE;
-	bottomLeftWall.x = bottomLeft.x - WALL_ESCAPE_DISTANCE;
-	bottomLeftWall.y = bottomLeft.y + WALL_ESCAPE_DISTANCE;
+	bottomLeftWall.x = bottomLeft.x + WALL_ESCAPE_DISTANCE;
+	bottomLeftWall.y = bottomLeft.y - WALL_ESCAPE_DISTANCE;
 	bottomRightWall.x = bottomRight.x - WALL_ESCAPE_DISTANCE;
 	bottomRightWall.y = bottomRight.y - WALL_ESCAPE_DISTANCE;
 
