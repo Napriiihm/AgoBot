@@ -119,11 +119,14 @@ double Vec2_length(Vec2 vec);
 Vec2f Vec2toVec2f(Vec2 vec);
 Vec2 Vec2ftoVec2(Vec2f vec);
 Vec2 NodetoVec2(Node* node);
+double Vec2_scalar(Vec2 vec1, Vec2 vec2);
 
 Vec2 rotateVec2(Vec2 vec, int angle);
 int getAngleVirus(Node* virus, Node* player);
 int getAngleThreat(Node* threat, Node* player);
 double getWallDistance(Node* node);
+Vec2 getWallForce(Node* node);
+double getAngle(Vec2 vec1, Vec2 vec2);
 
 int getMass(Node* node);
 

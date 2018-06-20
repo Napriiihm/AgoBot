@@ -5,6 +5,11 @@
 double max(double a, double b) { return (a > b) ? a : b; }
 double min(double a, double b) { return (a > b) ? b : a; }
 
+double Vec2_scalar(Vec2 vec1, Vec2 vec2)
+{
+	return vec1.x * vec2.x + vec1.y * vec2.y;
+}
+
 Vec2 rotateVec2(Vec2 vec, int angle)
 {
 	double rad = angle * M_PI / 180.f;
@@ -157,10 +162,58 @@ int getAngleVirus(Node *virus, Node *player)
 		if (abs(virus->x - player->x) < 25) 
 			angle = 180;
 	}
+	else
+	{
+		Vec2 playerPos = NodetoVec2(player);
+		Vec2 virusPos = NodetoVec2(virus);
 
-	
+		Vec2 unit = NodetoVec2(virus); unit.y -= 10;
+
+		Vec2 virusPlayer;
+		virusPlayer.x = playerPos.x - virusPos.x;
+		virusPlayer.y = playerPos.y - virusPos.y;
+
+		double teta = acos(Vec2_scalar(unit, virusPlayer));
+		if(teta < 0)
+			teta += 2 * M_PI;
+
+		Vec2 virusNearFood;
+		virusNearFood.x = nearestFood->x - virusPos.x;
+		virusNearFood.y = nearestFood->y - virusPos.y;
+
+		double alpha = acos(Vec2_scalar(unit, virusNearFood));
+		if(alpha < 0)
+			alpha += 2 * M_PI;
+		
+		if(teta < alpha)
+			angle = ESCAPE_VIRUS_ANGLE;
+		else
+			angle = -ESCAPE_VIRUS_ANGLE;
+	}
 
 	return angle;
+}
+
+double getAngle(Vec2 vec1, Vec2 vec2)
+{
+	return acos(Vec2_scalar(vec1, vec2));
+}
+
+Vec2 getWallForce(Node* node)
+{
+	Vec2 ret; memset(&ret, 0, sizeof(Vec2));
+	
+	if(node->x < WALL_ESCAPE_DISTANCE)
+		ret.x += WALL_FORCE;
+	else if(node->x > 7200 - WALL_ESCAPE_DISTANCE)
+		ret.x -= WALL_FORCE;
+
+	if(node->y < WALL_ESCAPE_DISTANCE)
+		ret.y += WALL_FORCE;
+	else if(node->y > 3200 - WALL_ESCAPE_DISTANCE)
+		ret.y -= WALL_FORCE;
+
+	return ret;
 }
 
 double Vec2_length(Vec2 vec)

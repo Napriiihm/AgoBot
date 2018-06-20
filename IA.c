@@ -1,6 +1,14 @@
 #include "IA.h"
 
-void IAInit(const char* name) { BotName = malloc(strlen(name)+1); strcpy(BotName, name); }
+void IAInit(const char* name) 
+{ 
+	BotName = malloc(strlen(name)+1);
+	strcpy(BotName, name);
+
+	nearestFood = NULL;
+	state = IDLE;
+}
+
 char* getName() { return BotName; }
 
 char isPlayer(Node* node)
@@ -157,7 +165,10 @@ void IAUpdate(struct lws *wsi)
 			if(player->size > 105 && player_length < 16)
 			{
 				NodeStack_push(&passiveThreats, node);
-				drawDebugCircle(virusPosScreen.x, virusPosScreen.y, node->size + AVOID_VIRUS_DISTANCE, 255, 0, 0);
+				if(getWallDistance(node) < node->size + player->size * 2)
+					drawDebugCircle(virusPosScreen.x, virusPosScreen.y, node->size + AVOID_VIRUS_DISTANCE_NEAR_WALL, 0xee, 0x82, 0xee);
+				else
+					drawDebugCircle(virusPosScreen.x, virusPosScreen.y, node->size + AVOID_VIRUS_DISTANCE, 255, 0, 0);
 			}
 
 			if(player->size > 105 && player_length < 16 && distance < AVOID_VIRUS_DISTANCE)
@@ -166,7 +177,7 @@ void IAUpdate(struct lws *wsi)
 		else if(node->type == PLAYER && isPlayer(node) == 0)
 		{
 			printf("player node %s\n", node->name);
-			double mire = TARGET_MARGE;
+			double mire = TARGET_MARGE + sqrt(pow(7200.f/2, 2) + pow(3200/2.f, 2)) / getWallDistance(node) * TARGET_WALL_FACTOR;
 			printf("WallDistance = %f\n", getWallDistance(node));
 
 			if(canSplit(player, node))
@@ -199,7 +210,12 @@ void IAUpdate(struct lws *wsi)
 
 				drawDebugCircle(nodePosScreen.x, nodePosScreen.y, marge + node->size, 255, 0, 0);
 				if(distance < marge + node->size)
+				{
+					if(state == IDLE)
+						state = ESCARGOT;
+
 					NodeStack_push(&threats, node);
+				}					
 			}	
 			else
 				puts("OSEF");			
@@ -220,7 +236,12 @@ void IAUpdate(struct lws *wsi)
 
 		double dangerRadius = 0;
 		if(threat->type == VIRUS && player->size > 105 && player_length != 16)
-			dangerRadius = threat->size + AVOID_VIRUS_DISTANCE;
+		{
+			if(getWallDistance(threat) < 2 * player->size + threat->size)
+				dangerRadius = threat->size + AVOID_VIRUS_DISTANCE_NEAR_WALL;
+			else
+				dangerRadius = threat->size + AVOID_VIRUS_DISTANCE;
+		}
 		else if(threat->size / (float)player->size > 1.1f)
 		{
 			if(canSplit(threat, player))
@@ -239,7 +260,7 @@ void IAUpdate(struct lws *wsi)
 				continue;
 			}
 
-			double dist = getDistance(food, threat);
+			double dist = getDistance(food, threat) + threat->size;
 			if(dist <= dangerRadius)
 				food->isSafe = 0;
 
@@ -251,53 +272,87 @@ void IAUpdate(struct lws *wsi)
 
 	if(NodeStack_length(threats) > 0)
 	{
-		Node* threat = NodeStack_getNearest(threats, player);
-		if(threat != NULL)
+		if(NodeStack_length(viruses) > 0)
 		{
-			Vec2 threatPos = NodetoVec2(threat);
-			Vec2 dir; 
-			dir.x = threatPos.x - playerPos.x;
-			dir.y = threatPos.y - playerPos.y;
-
-			int angle = getAngleThreat(threat, player);
-			Vec2 rotate = rotateVec2(dir, angle);
-
-			rotate.x = playerPos.x + rotate.x;
-			rotate.y = playerPos.y + rotate.y;
-
-			drawDebugLine(World2Screen(playerPos), World2Screen(threatPos), 25, 25, 200);
-			drawDebugLine(World2Screen(playerPos), World2Screen(rotate), 0, 0, 255);
-
-			Vec2 rotatee;
-
-			if(NodeStack_length(viruses) > 0)
+			printf("DFKLGHSDFJLGSDFJLGHSDFLGHSDFHLG\n");
+			Node* virus = viruses->node;
+			if(virus != NULL)
 			{
-				Node* virus = viruses->node;
-				if(virus != NULL)
+				Vec2 virusPos = NodetoVec2(virus);
+				Vec2 dir; 
+				dir.x = virusPos.x - playerPos.x;
+				dir.y = virusPos.y - playerPos.y;
+
+				Vec2 threatPos = NodetoVec2(NodeStack_getNearest(threats, player));
+
+				Vec2 enemiPlayer;
+				enemiPlayer.x = playerPos.x - threatPos.x;
+				enemiPlayer.y = playerPos.y - threatPos.y;
+
+				Vec2 playerVirus;
+				playerVirus.x = virusPos.x - playerPos.x;
+				playerVirus.y = virusPos.y - playerPos.y;
+				
+				double angle = getAngle(enemiPlayer, playerVirus);
+				if(angle > 0)
+					angle = -ESCAPE_VIRUS_ANGLE;
+				else
+					angle = ESCAPE_VIRUS_ANGLE;
+
+				Vec2 rotate = rotateVec2(dir, angle);
+
+				rotate.x = playerPos.x + rotate.x;
+				rotate.y = playerPos.y + rotate.y;
+
+				drawDebugLine(World2Screen(playerPos), World2Screen(virusPos), 25, 25, 200);
+				drawDebugLine(World2Screen(playerPos), World2Screen(rotate), 0, 0, 255);
+
+				Move(wsi, rotate);
+			}
+		}
+		else
+		{
+			Vec2 escape;
+
+			tmp = threats;
+			while(tmp != NULL)
+			{
+				Node* threat = tmp->node;
+				if(threat == NULL)
 				{
-					Vec2 virusPos = NodetoVec2(virus);
-					Vec2 dir; 
-					dir.x = virusPos.x - playerPos.x;
-					dir.y = virusPos.y - playerPos.y;
-
-					int angle = getAngleVirus(virus, player);
-					rotatee = rotateVec2(dir, angle);
-
-					rotatee.x = playerPos.x + rotatee.x;
-					rotatee.y = playerPos.y + rotatee.y;
-
-					drawDebugLine(World2Screen(playerPos), World2Screen(virusPos), 25, 25, 200);
-					drawDebugLine(World2Screen(playerPos), World2Screen(rotatee), 0, 0, 255);
+					tmp = tmp->next;
+					continue;
 				}
+
+				Vec2 threatPos = NodetoVec2(threat);
+				Vec2 offset;
+				offset.x = playerPos.x - threatPos.x;
+				offset.y = playerPos.y - threatPos.y;
+
+				drawDebugLine(World2Screen(playerPos), World2Screen(threatPos), 255, 0, 0);
+
+				escape.x += offset.x;
+				escape.y += offset.y;
+
+				tmp = tmp->next;
 			}
 
-			rotate.x += rotatee.x - playerPos.x;
-			rotate.y += rotatee.y - playerPos.y;
+			if(getWallDistance(player) < WALL_ESCAPE_DISTANCE)
+			{
+				Vec2 wallForce = getWallForce(player);
 
-			Move(wsi, rotate);
+				Vec2 wallForcePlace;
+				wallForcePlace.x = playerPos.x + wallForce.x;
+				wallForcePlace.y = playerPos.y + wallForce.y;
+				drawDebugLine(World2Screen(playerPos), World2Screen(wallForcePlace), 125, 125, 125);
+
+				escape.x += wallForce.x;
+				escape.y += wallForce.y;
+			}
+
+			drawDebugLine(World2Screen(escape), World2Screen(playerPos), 0, 0, 255);
+			Move(wsi, escape);
 		}
-
-
 	}
 	else if(NodeStack_length(targets) > 0)
 	{
@@ -349,7 +404,22 @@ void IAUpdate(struct lws *wsi)
 				dir.x = virusPos.x - playerPos.x;
 				dir.y = virusPos.y - playerPos.y;
 
-				int angle = getAngleVirus(virus, player);
+				Vec2 targetPos = NodetoVec2(NodeStack_getNearest(targets, player));
+
+				Vec2 playerTarget;
+				playerTarget.x = targetPos.x - playerPos.x;
+				playerTarget.y = targetPos.y - playerPos.y;
+
+				Vec2 playerVirus;
+				playerVirus.x = virusPos.x - playerPos.x;
+				playerVirus.y = virusPos.y - playerPos.y;
+				
+				double angle = getAngle(playerTarget, playerVirus);
+				if(angle > 0)
+					angle = -ESCAPE_VIRUS_ANGLE;
+				else
+					angle = ESCAPE_VIRUS_ANGLE;
+
 				Vec2 rotate = rotateVec2(dir, angle);
 
 				rotate.x = playerPos.x + rotate.x;
@@ -433,10 +503,13 @@ void IAUpdate(struct lws *wsi)
 
 		if(target != NULL)
 		{
+			nearestFood = target;
 			drawDebugLine(World2Screen(playerPos), World2Screen(NodetoVec2(target)), 0, 255, 0);
 			Move(wsi, NodetoVec2(target));
 		}
 	}
+	if(NodeStack_length(threats) == 0)
+		state = IDLE;
 }
 
 void AddNode(unsigned char* data)

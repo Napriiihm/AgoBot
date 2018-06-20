@@ -19,3 +19,6 @@ Utils.o : Utils.c
 
 UI.o : UI.c	
 	$(CC) -o $@ -c $< $(CFLAGS)
+
+clean :
+	rm -rf *.o
