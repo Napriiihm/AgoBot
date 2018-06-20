@@ -1,6 +1,6 @@
 #include "Utils.h"
 
-#include "IA.h"
+#include "IA.h"                                                                                                                                                                                                                  
 
 double max(double a, double b) { return (a > b) ? a : b; }
 double min(double a, double b) { return (a > b) ? b : a; }
@@ -15,45 +15,150 @@ Vec2 rotateVec2(Vec2 vec, int angle)
 	return Vec2ftoVec2(ret);
 }
 
+double getWallDistance(Node* node)
+{
+	if(node == NULL)
+		return 0;
+
+	double left = node->x, right = 7200 - node->x, up = node->y, down = 3200 - node->y;
+
+	double minLR = min(left, right);
+	double minUD = min(up, down);
+
+	return min(minLR, minUD);
+}
+
+int getAngleThreat(Node* threat, Node* player)
+{
+	int ret = ESCAPE_THREAT_ANGLE;
+	ZONE enemyZone = getZone(threat);
+	if(enemyZone == LEFT_DOWN)
+	{
+		if(player->x < threat->x && player->y < threat->y) //haut-gauche
+			ret = ESCAPE_THREAT_ANGLE;
+		else if(player->x > threat->x && player->y < threat->y) //haut-droit
+			ret = 180;
+		else if(player->x > threat->x && player->y > threat->y) //badoit
+			ret = -ESCAPE_THREAT_ANGLE;
+		else //bas-gauche
+		{
+			if(threat->x > 3200 - threat->y)
+				ret = ESCAPE_THREAT_ANGLE;
+			else
+				ret = -ESCAPE_THREAT_ANGLE;
+		}
+	}
+	else if(enemyZone == LEFT_UP)
+	{
+		if(player->x < threat->x && player->y < threat->y) //haut-gauche
+		{
+			if(threat->x < threat->y)
+				ret = ESCAPE_THREAT_ANGLE;
+			else
+				ret = -ESCAPE_THREAT_ANGLE;
+		}
+		else if(player->x > threat->x && player->y < threat->y) //haut-droit
+			ret = ESCAPE_THREAT_ANGLE;
+		else if(player->x > threat->x && player->y > threat->y) //badoit
+			ret = 180;
+		else //bas-gauche
+			ret = -ESCAPE_THREAT_ANGLE;
+	}
+	else if(enemyZone == RIGHT_UP)
+	{
+		if(player->x < threat->x && player->y < threat->y) //haut-gauche
+			ret = -ESCAPE_THREAT_ANGLE;
+		else if(player->x > threat->x && player->y < threat->y) //haut-droit
+		{
+			if(7200 - threat->x > threat->y)
+				ret = -ESCAPE_THREAT_ANGLE;
+			else
+				ret = ESCAPE_THREAT_ANGLE;
+		}
+		else if(player->x > threat->x && player->y > threat->y) //badoit
+			ret = ESCAPE_THREAT_ANGLE;
+		else //bas-gauche
+			ret = 180;
+		
+	}
+	else if(enemyZone == RIGHT_DOWN)
+	{
+		if(player->x < threat->x && player->y < threat->y) //haut-gauche
+			ret = 180;
+		else if(player->x > threat->x && player->y < threat->y) //haut-droit
+			ret = -ESCAPE_THREAT_ANGLE;
+		else if(player->x > threat->x && player->y > threat->y) //badoit
+		{
+			if(7200 - threat->x > 3200 - threat->y)
+				ret = -ESCAPE_THREAT_ANGLE;
+			else
+				ret = ESCAPE_THREAT_ANGLE;
+		}
+		else //bas-gauche
+			ret = ESCAPE_THREAT_ANGLE;		
+	}
+
+	return ret;
+}
+
 int getAngleVirus(Node *virus, Node *player)
 {
 	int dist = 2 * player->size + virus->size;
 	SIDE cas = NOTHING;
 
-	if (virus->x < dist)	cas = LEFT;
-	else if ((7200 - virus->x) < dist )	cas = RIGHT;
-	else if (virus->y < dist)	cas = UP;
-	else if ((3200 - virus->y) < dist)	cas = DOWN;
+	if(virus->x < dist)	
+		cas = LEFT;
+	else if (7200 - virus->x < dist )	
+		cas = RIGHT;
+	else if(virus->y < dist)	
+		cas = UP;
+	else if(3200 - virus->y < dist)	
+		cas = DOWN;
 	
-	int angle = 90;
+	int angle = ESCAPE_VIRUS_ANGLE;
 
 	if (cas == LEFT)
 	{
-		if (player->y > virus->y ) angle =  95;
-		else angle =  -95;
+		if(player->y > virus->y) 
+			angle = ESCAPE_VIRUS_ANGLE;
+		else 
+			angle = -ESCAPE_VIRUS_ANGLE;
 
-		if ( abs(virus->y - player->y) < 10) angle = 180;
-	} else if (cas == RIGHT)
+		if (abs(virus->y - player->y) < 25) 
+			angle = 180;
+	} 
+	else if (cas == RIGHT)
 	{	
-		if (player->y > virus->y) angle = 95;
-		else angle = -95;
+		if (player->y > virus->y) 
+			angle = -ESCAPE_VIRUS_ANGLE;
+		else 
+			angle = ESCAPE_VIRUS_ANGLE;
 
-		if ( abs(virus->y - player->y) < 10) angle = 180;
-	} else if (cas == UP)
+		if (abs(virus->y - player->y) < 25) 
+			angle = 180;
+	} 
+	else if (cas == UP)
 	{
-		if (player->x < virus->x ) angle =  95;
-		else angle =  -95;
+		if (player->x < virus->x) 
+			angle = ESCAPE_VIRUS_ANGLE;
+		else 
+			angle = -ESCAPE_VIRUS_ANGLE;
 
-		if ( abs(virus->x - player->x) < 10) angle = 180;
-	} else if (cas == DOWN)
+		if (abs(virus->x - player->x) < 25) 
+			angle = 180;
+	} 
+	else if (cas == DOWN)
 	{
-		if (player->x < virus->x ) angle =  -95;
-		else angle =  95;
+		if (player->x < virus->x) 
+			angle = -ESCAPE_VIRUS_ANGLE;
+		else 
+			angle = ESCAPE_VIRUS_ANGLE;
 
-		if ( abs(virus->x - player->x) < 10) angle = 180;
+		if (abs(virus->x - player->x) < 25) 
+			angle = 180;
 	}
 
-
+	
 
 	return angle;
 }
@@ -238,6 +343,36 @@ Node* NodeStack_get(NodeStack* list, unsigned int id)
 		tmp = tmp->next;
 	}
 	return NULL;
+}
+
+Node* NodeStack_getNearest(NodeStack* list, Node* node)
+{
+	if(node == NULL)
+		return NULL;
+
+	double bestDist = 9999;
+	Node* ret = NULL;
+	NodeStack* tmp = list;
+	while(tmp != NULL)
+	{
+		Node* curr = tmp->node;
+		if(curr == NULL)
+		{
+			tmp = tmp->next;
+			continue;
+		}
+
+		double dist = getDistance(curr, node);
+		if(dist < bestDist)
+		{
+			bestDist = dist;
+			ret = curr;
+		}
+
+		tmp = tmp->next;
+	}
+
+	return ret;
 }
 
 NodeStack* NodeStack_remove(NodeStack* list, unsigned int id)

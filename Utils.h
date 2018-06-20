@@ -10,6 +10,7 @@
 #include <syslog.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
@@ -101,6 +102,7 @@ size_t NodeStack_length(NodeStack* list);
 void NodeStack_update(NodeStack** list, Node* elem);
 Node* NodeStack_getLowest(NodeStack* list);
 Node* NodeStack_getLargest(NodeStack* list);
+Node* NodeStack_getNearest(NodeStack* list, Node* node);
 
 double getDistance(Node* n1, Node* n2);
 double getDist(Vec2 a, Vec2 b);
@@ -120,6 +122,8 @@ Vec2 NodetoVec2(Node* node);
 
 Vec2 rotateVec2(Vec2 vec, int angle);
 int getAngleVirus(Node* virus, Node* player);
+int getAngleThreat(Node* threat, Node* player);
+double getWallDistance(Node* node);
 
 int getMass(Node* node);
 

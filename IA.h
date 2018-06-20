@@ -5,9 +5,12 @@
 #include "UI.h"
 
 #define AVOID_VIRUS_DISTANCE 5
-#define TARGET_MARGE 400
-#define ENEMIE_SECURE_DISTANCE 50
+#define TARGET_MARGE 800
+#define ENEMIE_SECURE_DISTANCE 200
 #define WALL_ESCAPE_DISTANCE 100
+#define ESCAPE_VIRUS_ANGLE 100
+#define SPLIT_DISTANCE_COEF 2
+#define ESCAPE_THREAT_ANGLE 100
 
 const char* BotName;
 
@@ -27,7 +30,5 @@ unsigned int newPlayerNodeId;
 unsigned int playerID;
 unsigned int player_length;
 unsigned int playerTotalSize;
-
-int split_timer;
 
 #endif
