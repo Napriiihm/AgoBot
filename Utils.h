@@ -1,10 +1,15 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <signal.h>
+#include <syslog.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846
@@ -36,6 +41,15 @@ typedef enum ZONE
 	RIGHT_UP,
 	RIGHT_DOWN
 } ZONE;
+
+typedef enum SIDE
+{
+	LEFT,
+	RIGHT,
+	UP,
+	DOWN,
+	NOTHING
+} SIDE;
 
 typedef struct Map
 {
@@ -79,7 +93,7 @@ typedef struct Packet
 void Stack_push(Stack** stack, void* elem);
 
 void NodeStack_push(NodeStack** list, Node* elem);
-void NodeStack_clear(NodeStack** list);
+void NodeStack_clear(NodeStack* list);
 Node* NodeStack_get(NodeStack* list, unsigned int id);
 NodeStack* NodeStack_remove(NodeStack* list, unsigned int id);
 char NodeStack_find(NodeStack* list, unsigned int id);
@@ -104,13 +118,12 @@ Vec2f Vec2toVec2f(Vec2 vec);
 Vec2 Vec2ftoVec2(Vec2f vec);
 Vec2 NodetoVec2(Node* node);
 
+Vec2 rotateVec2(Vec2 vec, int angle);
+int getAngleVirus(Node* virus, Node* player);
+
 int getMass(Node* node);
 
 double splitDistance(Node* node);
-char virusSurLeChemin(Node *food);
-
-char isNearWall(Node* node);
-void escapeWall(Node* node, Vec2* target);
 
 void printHex(char* data, size_t size);
              

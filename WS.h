@@ -18,6 +18,4 @@ typedef struct s_packet
     struct s_packet *next;
 } t_packet;
 
-int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len);
-
 #endif

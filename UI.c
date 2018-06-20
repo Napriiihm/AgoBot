@@ -40,15 +40,15 @@ void drawWalls()
 
 	Vec2 playerPos = NodetoVec2(player);
 
-	topLeft = World2Screen(topLeft, playerPos);
-	topRight = World2Screen(topRight, playerPos);
-	bottomLeft = World2Screen(bottomLeft, playerPos);
-	bottomRight = World2Screen(bottomRight, playerPos);
+	topLeft = World2Screen(topLeft);
+	topRight = World2Screen(topRight);
+	bottomLeft = World2Screen(bottomLeft);
+	bottomRight = World2Screen(bottomRight);
 
-	topLeftWall = World2Screen(topLeftWall, playerPos);
-	topRightWall = World2Screen(topRightWall, playerPos);
-	bottomLeftWall = World2Screen(bottomLeftWall, playerPos);
-	bottomRightWall = World2Screen(bottomRightWall, playerPos);
+	topLeftWall = World2Screen(topLeftWall);
+	topRightWall = World2Screen(topRightWall);
+	bottomLeftWall = World2Screen(bottomLeftWall);
+	bottomRightWall = World2Screen(bottomRightWall);
 
 	drawDebugLine(topLeft, topRight, 0, 0, 0);
 	drawDebugLine(topRight, bottomRight, 0, 0, 0);
@@ -110,12 +110,17 @@ Circle Node2Circle(Node* node)
 	return ret;
 }
 
-Vec2 World2Screen(Vec2 pos, Vec2 playerPos)
+Vec2 World2Screen(Vec2 pos)
 {
 	Vec2 ret;
 	memset(&ret, 0, sizeof(Vec2));
 
+	if(player == NULL)
+		return ret;
+
 	Vec2 zoom = getZoom();
+
+	Vec2 playerPos = NodetoVec2(player);
 
 	ret.x = (pos.x - playerPos.x + zoom.x / 2) * WINDOW_WIDTH / zoom.x;
 	ret.y = (pos.y - playerPos.y + zoom.y / 2) * WINDOW_HEIGTH / zoom.y;	
@@ -142,7 +147,7 @@ void DrawAllNodes()
 			Vec2 nodePos;
 			nodePos.x = tmp->node->x;
 			nodePos.y = tmp->node->y;
-			nodePos = World2Screen(nodePos, playerPos);
+			nodePos = World2Screen(nodePos);
 
 			nodeCircle.x = nodePos.x;
 			nodeCircle.y = nodePos.y;
@@ -184,10 +189,15 @@ void Clear()
 	SDL_RenderClear(pRenderer);
 }
 
-void Render()
+void Draw()
 {
 	drawWalls();
 
+	DrawAllNodes();
+}
+
+void Render()
+{
 	SDL_SetRenderDrawColor(pRenderer, 225, 225, 225, 255);
 
 	SDL_RenderPresent(pRenderer);

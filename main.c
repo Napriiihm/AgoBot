@@ -81,7 +81,7 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 		unsigned char start[5] = {0xfe, 13, 0, 0, 0};
 		sendCommand(wsi, start, 5);
 
-		char* name = getName();
+		char* name = BotName;
 		printf("Name: %s\n", name);
 		unsigned int nameLength = strlen(name) + 1;
 		char* namePacket = malloc(nameLength + 1);
@@ -110,11 +110,9 @@ int callbackOgar(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
 
 				Clear();
 
-				DrawAllNodes();
+				Draw();
 
-				//IAV3(wsi);
-				//IAV2(wsi);
-				IAUpdate(wsi);
+				IAUpdate(wsi);				
 
 				Loop(&forceExit);
 
@@ -200,10 +198,8 @@ int main(int argc, char **argv)
 
 	i.context = context;
 
+	IAInit("Zoltan");
 	InitUI();
-
-	const char* name = "Zoltan";
-	IAInit(name);
 
 	if (lws_client_connect_via_info(&i))
 		;

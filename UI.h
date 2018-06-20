@@ -30,10 +30,9 @@ TTF_Font* pFont;
 int InitUI();
 void Loop(int* exit);
 void Clear();
+void Draw();
 
-void DrawAllNodes();
-
-Vec2 World2Screen(Vec2 pos, Vec2 playerPos);
+Vec2 World2Screen(Vec2 pos);
 
 void drawDebugLine(Vec2 start, Vec2 end, char r, char g, char b);
 void drawDebugCircle(int x, int y, short radius, char r, char g, char b);

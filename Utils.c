@@ -5,68 +5,57 @@
 double max(double a, double b) { return (a > b) ? a : b; }
 double min(double a, double b) { return (a > b) ? b : a; }
 
-char isNearWall(Node* node)
+Vec2 rotateVec2(Vec2 vec, int angle)
 {
-	if(node->x - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 7200 - WALL_ESCAPE_DISTANCE)
-		return 1;
+	double rad = angle * M_PI / 180.f;
+	Vec2f ret;
+	ret.x = vec.x * cos(rad) - vec.y * sin(rad);
+	ret.y = vec.x * sin(rad) + vec.y * cos(rad);
 
-	if(node->y - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 3200 - WALL_ESCAPE_DISTANCE)
-		return 1;
-
-	return 0;
+	return Vec2ftoVec2(ret);
 }
 
-void escapeWall(Node* node, Vec2* target)
+int getAngleVirus(Node *virus, Node *player)
 {
-	if(node->x - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 7200 - WALL_ESCAPE_DISTANCE)
-		target->x = -target->x;
+	int dist = 2 * player->size + virus->size;
+	SIDE cas = NOTHING;
 
-	if(node->y - node->size < WALL_ESCAPE_DISTANCE || node->x + node->size > 3200 - WALL_ESCAPE_DISTANCE)
-		target->y = -target->y;
-}
+	if (virus->x < dist)	cas = LEFT;
+	else if ((7200 - virus->x) < dist )	cas = RIGHT;
+	else if (virus->y < dist)	cas = UP;
+	else if ((3200 - virus->y) < dist)	cas = DOWN;
+	
+	int angle = 90;
 
-char virusSurLeChemin(Node *food)
-{
-	NodeStack* tmp = nodes;
-	while(tmp != NULL)
+	if (cas == LEFT)
 	{
-		Node* virus = tmp->node;
-		if(virus == NULL)
-		{
-			tmp = tmp->next;
-			continue;
-		}
+		if (player->y > virus->y ) angle =  95;
+		else angle =  -95;
 
-		if(virus->type == VIRUS)
-		{
-			double distancePlayerVirus = getDistance(player, virus);
-			double distancePlayerFood = getDistance(player, food);
+		if ( abs(virus->y - player->y) < 10) angle = 180;
+	} else if (cas == RIGHT)
+	{	
+		if (player->y > virus->y) angle = 95;
+		else angle = -95;
 
-			if(player->x - virus->x == 0)
-			{
-				if(distancePlayerFood > distancePlayerVirus - virus->size || getDistance(virus, food) < virus->size) 
-					return 1;
-			}
-			else
-			{
-				double marge = 2 * player->size + player->size;
-				double angleVirus = atan((virus->size + marge) / distancePlayerVirus);
+		if ( abs(virus->y - player->y) < 10) angle = 180;
+	} else if (cas == UP)
+	{
+		if (player->x < virus->x ) angle =  95;
+		else angle =  -95;
 
-				double a = (player->y - virus->y) / (player->x - virus->x);
-				double b = player->y - a * player->x;
+		if ( abs(virus->x - player->x) < 10) angle = 180;
+	} else if (cas == DOWN)
+	{
+		if (player->x < virus->x ) angle =  -95;
+		else angle =  95;
 
-				double coteOppose = abs((a * food->x - food->y + b) / sqrt(pow(a, 2) + pow(-1, 2)));
-
-				double angleFood = asin(coteOppose / distancePlayerFood);
-
-				if(distancePlayerFood > distancePlayerVirus - 1.5 * virus->size && angleFood < angleVirus || getDistance(virus, food) < virus->size)
-					return 1;
-			}
-		}
-		tmp = tmp->next;
+		if ( abs(virus->x - player->x) < 10) angle = 180;
 	}
 
-	return 0;
+
+
+	return angle;
 }
 
 double Vec2_length(Vec2 vec)
@@ -81,7 +70,7 @@ int getMass(Node* node)
 
 double splitDistance(Node* node)
 {
-	return node->size * 3.f;
+	return node->size * 2.f;
 }
 
 Node* NodeStack_getLargest(NodeStack* list)
@@ -226,16 +215,16 @@ void NodeStack_push(NodeStack** list, Node* elem)
 	*list = new;
 }
 
-void NodeStack_clear(NodeStack** list)
+void NodeStack_clear(NodeStack* list)
 {
-	while(*list != NULL)
+	while(list != NULL)
 	{
-		if((*list)->node == NULL)
+		if(list->node == NULL)
 		{
-			*list = (*list)->next;
+			list = list->next;
 			continue;
 		}
-		*list = NodeStack_remove(*list, (*list)->node->nodeID);
+		list = NodeStack_remove(list, list->node->nodeID);
 	}
 }
 
@@ -260,12 +249,13 @@ NodeStack* NodeStack_remove(NodeStack* list, unsigned int id)
 
 	prev = list;
 
-	if(prev->node->nodeID == id)
+	if(prev->node != NULL && prev->node->nodeID == id)
 	{
 		list = prev->next;
 		free(prev->node);
 		prev->node = NULL;
 		free(prev);
+		prev = NULL;
 		return list;
 	}
 
@@ -278,6 +268,7 @@ NodeStack* NodeStack_remove(NodeStack* list, unsigned int id)
 			free(tmp->node);
 			tmp->node = NULL;
 			free(tmp);
+			tmp = NULL;
 			return list;
 		}
 		prev = tmp;
@@ -331,7 +322,7 @@ void NodeStack_update(NodeStack** list, Node* elem)
 
 double getDistance(Node* n1, Node* n2)
 {
-	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2));
+	return sqrt(pow((double)n1->x - (double)n2->x, 2) + pow((double)n1->y - (double)n2->y, 2)) - n1->size - n2->size;
 }
 
 double getDist(Vec2 a, Vec2 b)

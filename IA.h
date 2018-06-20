@@ -1,27 +1,13 @@
 #ifndef IA_H
 #define IA_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <string.h>
-#include <signal.h>
-#include <syslog.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-#include "Angle.h"
 #include "WS.h"
 #include "UI.h"
 
-#define SPLIT_DISTANCE 710
-#define DANGER_DISTANCE 50
-#define FOOD_VALUE 10
-
-#define WALL_VALUE 100
-#define WALL_ESCAPE_DISTANCE 200
-#define DEFAULT_MARGE 200
-#define AVOID_VIRUS_DISTANCE 15
+#define AVOID_VIRUS_DISTANCE 5
+#define TARGET_MARGE 400
+#define ENEMIE_SECURE_DISTANCE 50
+#define WALL_ESCAPE_DISTANCE 100
 
 const char* BotName;
 
