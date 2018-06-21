@@ -26,7 +26,6 @@ void UpdateNodes(unsigned char* data)
 {
 	player = NULL;
 	player_length = 0;
-	playerTotalSize = 1;
 	size_t NodeSize = 18; //sizeof(Node) - sizeof(char*)
 	size_t totalNameLength = 0; //taille des noms calculé pour skip vers les prochains nodes
 
@@ -47,26 +46,19 @@ void UpdateNodes(unsigned char* data)
 
 		node->isSafe = 1;
 
-		if(newPlayerNodeId == node->nodeID)
-		{
-			NodeStack_update(&playerNodes, node);
-			newPlayerNodeId = 0;
-		}
-
 		if(node->flags&0x8) //si la cellule a un nom
 		{
 			node->type = PLAYER;
+
 			size_t nameLength = strlen(pos + NodeSize); //taille du nom
 			node->name = malloc(nameLength+1); //on aloue la memoire pour le nom
 			strcpy(node->name, data + startNodePos + (i+1)*NodeSize + totalNameLength); //on copie le nom
 			totalNameLength += nameLength+1;//on augment la taille total des noms
+
 			if(strcmp(node->name, BotName) == 0) //si la cellule est noter bot
 			{
-				NodeStack_push(&playerNodes, node);
 				player_length++;
 				player = node;
-				playerID = player->nodeID;
-				playerTotalSize += node->size;
 			}
 		}
 		else if(node->flags&0x1)
@@ -74,10 +66,7 @@ void UpdateNodes(unsigned char* data)
 		else
 			node->type = FOOD;
 		
-		if(NodeStack_find(nodes, node->nodeID) == 0) //si on pas a deja cette cellule dans notre liste on l'update
-			NodeStack_push(&nodes, node); //on ajoute cette cellule a notre list
-		else
-			NodeStack_update(&nodes, node);
+		NodeStack_update(&nodes, node);
 
 		memcpy(&end, data + startNodePos + (i+1)*(NodeSize) + totalNameLength, sizeof(unsigned int)); //la nouvelle fin (check si c'est 0)
 		i++;
@@ -92,9 +81,6 @@ void UpdateNodes(unsigned char* data)
 	{
 		unsigned int nodeID;
 		memcpy(&nodeID, data + new_pos + sizeof(unsigned short) + j * sizeof(unsigned int), sizeof(unsigned int)); //on prend l'id
-		
-		//if(NodeStack_find(playerNodes, nodeID))
-		//	playerNodes = NodeStack_remove(playerNodes, nodeID);
 
 		nodes = NodeStack_remove(nodes, nodeID); //on suprime de notre liste
 	}
@@ -176,33 +162,33 @@ void IAUpdate(struct lws *wsi)
 		}
 		else if(node->type == PLAYER && isPlayer(node) == 0)
 		{
-			printf("player node %s\n", node->name);
+			//printf("player node %s\n", node->name);
 			double mire = TARGET_MARGE + sqrt(pow(7200.f/2, 2) + pow(3200/2.f, 2)) / getWallDistance(node) * TARGET_WALL_FACTOR;
-			printf("WallDistance = %f\n", getWallDistance(node));
+			//printf("WallDistance = %f\n", getWallDistance(node));
 
 			if(canSplit(player, node))
 			{
-				puts("I can split kill him !");
+				//puts("I can split kill him !");
 				mire = player->size * SPLIT_DISTANCE_COEF;
 			}
 
-			printf("mire de %s = %f\n", node->name, mire);
-			printf("distance = %f\n", distance);
-			printf("difference de taille : %f\n", player->size / (float)node->size);
+			//printf("mire de %s = %f\n", node->name, mire);
+			//printf("distance = %f\n", distance);
+			//printf("difference de taille : %f\n", player->size / (float)node->size);
 
 			if(player->size / (float)node->size > 1.2f && distance < mire)
 			{
-				puts("TARGETTTT");
+				//puts("TARGETTTT");
 				drawDebugCircle(nodePosScreen.x, nodePosScreen.y, mire, 0, 0, 255);	
 				NodeStack_push(&targets, node);
 			}
 			else if(node->size / (float)player->size > 1)
 			{
-				printf("threat !!!\n");
+				//printf("threat !!!\n");
 				double marge = ENEMIE_SECURE_DISTANCE;
 				if(canSplit(node, player))
 				{
-					puts("can slit");
+					//puts("can slit");
 					marge = node->size * SPLIT_DISTANCE_COEF;
 				}
 
@@ -210,15 +196,10 @@ void IAUpdate(struct lws *wsi)
 
 				drawDebugCircle(nodePosScreen.x, nodePosScreen.y, marge + node->size, 255, 0, 0);
 				if(distance < marge + node->size)
-				{
-					if(state == IDLE)
-						state = ESCARGOT;
-
-					NodeStack_push(&threats, node);
-				}					
+					NodeStack_push(&threats, node);					
 			}	
 			else
-				puts("OSEF");			
+				;//puts("OSEF");			
 		}
 
 		tmp = tmp->next;
@@ -274,7 +255,7 @@ void IAUpdate(struct lws *wsi)
 	{
 		if(NodeStack_length(viruses) > 0)
 		{
-			printf("DFKLGHSDFJLGSDFJLGHSDFLGHSDFHLG\n");
+			//printf("DFKLGHSDFJLGSDFJLGHSDFLGHSDFHLG\n");
 			Node* virus = viruses->node;
 			if(virus != NULL)
 			{
@@ -378,7 +359,7 @@ void IAUpdate(struct lws *wsi)
 			{
 				go = target;
 				split = 1;
-				printf("Go Splitkill\n");
+				//printf("Go Splitkill\n");
 				splitTimer = clock();
 				break;
 			}
@@ -508,8 +489,14 @@ void IAUpdate(struct lws *wsi)
 			Move(wsi, NodetoVec2(target));
 		}
 	}
-	if(NodeStack_length(threats) == 0)
-		state = IDLE;
+	else
+	{
+		Vec2 middle;
+		middle.x = 7200/2;
+		middle.y = 3200/2;
+
+		Move(wsi, middle);h
+	}
 }
 
 void AddNode(unsigned char* data)
@@ -520,8 +507,6 @@ void AddNode(unsigned char* data)
 	//Node* node = NodeStack_get(nodes, id);
 	//if(node != NULL && NodeStack_find(playerNodes, node->nodeID))
 	//	NodeStack_push(&playerNodes, node);
-
-	newPlayerNodeId = id;
 }
 
 void IARecv(unsigned char* payload, int* exit)

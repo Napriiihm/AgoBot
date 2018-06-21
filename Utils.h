@@ -52,14 +52,6 @@ typedef enum SIDE
 	NOTHING
 } SIDE;
 
-typedef struct Map
-{
-	double left;
-	double top;
-	double right;
-	double bottom;
-} Map;
-
 typedef struct Node
 {
 	unsigned int nodeID;
@@ -78,20 +70,6 @@ typedef struct NodeStack
 	Node* node;
 	struct NodeStack* next;
 } NodeStack;
-
-typedef struct Stack
-{
-	void* elem;
-	struct Stack* next;
-} Stack;
-
-typedef struct Packet
-{
-	unsigned char* data;
-	size_t len;
-} Packet;
-
-void Stack_push(Stack** stack, void* elem);
 
 void NodeStack_push(NodeStack** list, Node* elem);
 void NodeStack_clear(NodeStack* list);

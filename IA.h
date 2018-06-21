@@ -15,19 +15,10 @@
 #define AVOID_VIRUS_DISTANCE_NEAR_WALL 100
 #define TARGET_WALL_FACTOR 3
 
-typedef enum ESCAPE_STATE
-{
-	IDLE,
-	ESCARGOT, //Léo
-	ESCAPE
-} ESCAPE_STATE;
-
 const char* BotName;
 
 void IARecv(unsigned char* payload, int* exit);
 void IAUpdate(struct lws *wsi);
-void IAV2(struct lws* wsi);
-void IAV3(struct lws* wsi);
 void IAInit(const char* name);
 char* getName();
 
@@ -37,12 +28,6 @@ Node* player;
 
 Node* nearestFood;
 
-ESCAPE_STATE state;
-
-unsigned int newPlayerNodeId;
-
-unsigned int playerID;
 unsigned int player_length;
-unsigned int playerTotalSize;
 
 #endif

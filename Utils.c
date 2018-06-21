@@ -357,14 +357,6 @@ unsigned int getFoodNum(NodeStack* list)
 	return ret;
 }
 
-void Stack_push(Stack** stack, void* elem)
-{
-	Stack* new = malloc(sizeof(Stack));
-	new->elem = elem;
-	new->next = *stack;
-	*stack = new;
-}
-
 void NodeStack_push(NodeStack** list, Node* elem)
 {
 	NodeStack* new = malloc(sizeof(NodeStack));
