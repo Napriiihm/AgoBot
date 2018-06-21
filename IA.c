@@ -6,7 +6,6 @@ void IAInit(const char* name)
 	strcpy(BotName, name);
 
 	nearestFood = NULL;
-	state = IDLE;
 }
 
 char* getName() { return BotName; }
@@ -28,6 +27,7 @@ void UpdateNodes(unsigned char* data)
 	player_length = 0;
 	size_t NodeSize = 18; //sizeof(Node) - sizeof(char*)
 	size_t totalNameLength = 0; //taille des noms calculé pour skip vers les prochains nodes
+	playerTotalSize = 0;
 
 	unsigned short deadLen; //taille des cellule manger
 	memcpy(&deadLen, data, 2); //copie vers la variable
@@ -59,6 +59,7 @@ void UpdateNodes(unsigned char* data)
 			{
 				player_length++;
 				player = node;
+				playerTotalSize += player->size;
 			}
 		}
 		else if(node->flags&0x1)
@@ -495,7 +496,7 @@ void IAUpdate(struct lws *wsi)
 		middle.x = 7200/2;
 		middle.y = 3200/2;
 
-		Move(wsi, middle);h
+		Move(wsi, middle);
 	}
 }
 

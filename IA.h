@@ -29,5 +29,6 @@ Node* player;
 Node* nearestFood;
 
 unsigned int player_length;
+unsigned int playerTotalSize;
 
 #endif
